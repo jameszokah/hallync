@@ -1,0 +1,2 @@
+ALTER TABLE IF EXISTS public.hostels
+ADD COLUMN IF NOT EXISTS amenities JSONB DEFAULT '{}';

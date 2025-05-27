@@ -1,0 +1,153 @@
+"use client"
+
+import { useState } from "react"
+import { Calendar, CreditCard, AlertCircle } from "lucide-react"
+
+import { Button } from "@/components/ui/button"
+import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from "@/components/ui/card"
+import { Label } from "@/components/ui/label"
+import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group"
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
+import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover"
+import { Calendar as CalendarComponent } from "@/components/ui/calendar"
+import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert"
+
+interface Hostel {
+  id: string
+  name: string
+  price: number
+  priceUnit: string
+  roomTypes: {
+    type: string
+    price: number
+    available: number
+  }[]
+}
+
+export function BookingForm({ hostel }: { hostel: Hostel }) {
+  const [selectedRoomType, setSelectedRoomType] = useState(hostel.roomTypes[0].type)
+  const [selectedRoomPrice, setSelectedRoomPrice] = useState(hostel.roomTypes[0].price)
+
+  const handleRoomTypeChange = (value: string) => {
+    setSelectedRoomType(value)
+    const roomType = hostel.roomTypes.find((room) => room.type === value)
+    if (roomType) {
+      setSelectedRoomPrice(roomType.price)
+    }
+  }
+
+  return (
+    <Card>
+      <CardHeader>
+        <CardTitle>Book Your Stay</CardTitle>
+        <CardDescription>Secure your room for the upcoming semester</CardDescription>
+      </CardHeader>
+      <CardContent className="space-y-4">
+        <div className="space-y-2">
+          <Label htmlFor="room-type">Room Type</Label>
+          <Select value={selectedRoomType} onValueChange={handleRoomTypeChange}>
+            <SelectTrigger id="room-type">
+              <SelectValue placeholder="Select room type" />
+            </SelectTrigger>
+            <SelectContent>
+              {hostel.roomTypes.map((room) => (
+                <SelectItem key={room.type} value={room.type}>
+                  {room.type} - ₵{room.price.toLocaleString()}/semester
+                </SelectItem>
+              ))}
+            </SelectContent>
+          </Select>
+        </div>
+
+        <div className="space-y-2">
+          <Label>Move-in Date</Label>
+          <Popover>
+            <PopoverTrigger asChild>
+              <Button variant="outline" className="w-full justify-start text-left font-normal">
+                <Calendar className="mr-2 h-4 w-4" />
+                <span>Pick a date</span>
+              </Button>
+            </PopoverTrigger>
+            <PopoverContent className="w-auto p-0" align="start">
+              <CalendarComponent mode="single" initialFocus />
+            </PopoverContent>
+          </Popover>
+        </div>
+
+        <div className="space-y-2">
+          <Label>Duration</Label>
+          <Select defaultValue="semester">
+            <SelectTrigger>
+              <SelectValue placeholder="Select duration" />
+            </SelectTrigger>
+            <SelectContent>
+              <SelectItem value="semester">One Semester</SelectItem>
+              <SelectItem value="academic-year">Full Academic Year</SelectItem>
+            </SelectContent>
+          </Select>
+        </div>
+
+        <Alert>
+          <AlertCircle className="h-4 w-4" />
+          <AlertTitle>Limited availability!</AlertTitle>
+          <AlertDescription>
+            Only {hostel.roomTypes.find((room) => room.type === selectedRoomType)?.available} rooms of this type left.
+          </AlertDescription>
+        </Alert>
+
+        <div className="pt-4 space-y-4">
+          <div className="flex justify-between">
+            <span className="text-muted-foreground">Room fee</span>
+            <span>₵{selectedRoomPrice.toLocaleString()}</span>
+          </div>
+          <div className="flex justify-between">
+            <span className="text-muted-foreground">Booking fee</span>
+            <span>₵200</span>
+          </div>
+
+          <div className="flex justify-between">
+            <span className="text-muted-foreground">Security deposit (refundable)</span>
+            <span>₵500</span>
+          </div>
+          <div className="border-t pt-4 flex justify-between font-bold">
+            <span>Total due now</span>
+            <span>₵{(selectedRoomPrice + 200 + 500).toLocaleString()}</span>
+          </div>
+        </div>
+      </CardContent>
+      <CardFooter className="flex flex-col">
+        <Button className="w-full mb-4">Reserve Now</Button>
+        <div className="text-center text-sm text-muted-foreground">
+          You won't be charged yet. A ₵200 booking fee secures your room.
+        </div>
+
+        <div className="mt-4 pt-4 border-t w-full">
+          <div className="text-sm font-medium mb-2">Payment Methods</div>
+          <RadioGroup defaultValue="mobile-money">
+            <div className="flex items-center space-x-2 mb-2">
+              <RadioGroupItem value="mobile-money" id="mobile-money" />
+              <Label htmlFor="mobile-money" className="flex items-center">
+                <CreditCard className="h-4 w-4 mr-2" />
+                Mobile Money (MTN, Vodafone, AirtelTigo)
+              </Label>
+            </div>
+            <div className="flex items-center space-x-2 mb-2">
+              <RadioGroupItem value="bank-transfer" id="bank-transfer" />
+              <Label htmlFor="bank-transfer" className="flex items-center">
+                <CreditCard className="h-4 w-4 mr-2" />
+                Bank Transfer
+              </Label>
+            </div>
+            <div className="flex items-center space-x-2">
+              <RadioGroupItem value="card" id="card" />
+              <Label htmlFor="card" className="flex items-center">
+                <CreditCard className="h-4 w-4 mr-2" />
+                Credit/Debit Card
+              </Label>
+            </div>
+          </RadioGroup>
+        </div>
+      </CardFooter>
+    </Card>
+  )
+}

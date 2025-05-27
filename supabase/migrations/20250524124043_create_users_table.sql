@@ -1,0 +1,12 @@
+-- -- Create users table
+-- CREATE TABLE IF NOT EXISTS public.users (
+--     id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
+--     first_name TEXT NOT NULL,
+--     last_name TEXT NOT NULL,
+--     email TEXT NOT NULL,
+--     phone TEXT NOT NULL,
+--     university TEXT NOT NULL,
+--     role TEXT NOT NULL DEFAULT 'student' CHECK (role IN ('student', 'admin', 'owner')),
+--     created_at TIMESTAMP WITH TIME ZONE DEFAULT NOW(),
+--     updated_at TIMESTAMP WITH TIME ZONE DEFAULT NOW()
+-- );

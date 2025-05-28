@@ -504,7 +504,7 @@ export function HostelsList({
       <header className="sticky top-0 z-30 border-b bg-background shadow-sm">
         <div className="container mx-auto px-4 py-3">
           <div className="flex flex-col sm:flex-row items-center gap-4">
-            <div className="flex items-center gap-4 flex-shrink-0">
+            <div className="flex items-center w-full justify-between gap-4 flex-shrink-0">
               <Link href="/" className="font-bold text-xl">
                 Hallynk
               </Link>

@@ -4,14 +4,15 @@ import { AdminHostelList } from "@/components/admin/hostel-list"
 export default async function AdminHostelsPage({
   searchParams,
 }: {
-  searchParams: { page?: string; verified?: string; university?: string; search?: string }
-}) {
+  searchParams: Promise<{ page?: string; verified?: string; university?: string; search?: string }>
+  }) {
+  const searchParam = await searchParams
   const supabase = await createClient()
-  const page = Number.parseInt(searchParams.page || "1")
+  const page = Number.parseInt(searchParam.page || "1")
   const pageSize = 10
-  const verified = searchParams.verified || ""
-  const university = searchParams.university || ""
-  const search = searchParams.search || ""
+  const verified = searchParam.verified || ""
+  const university = searchParam.university || ""
+  const search = searchParam.search || ""
 
   // Fetch universities for filter dropdown
   const { data: universities } = await supabase.from("universities").select("id, name").order("name")

@@ -4,13 +4,15 @@ import { AdminBookingList } from "@/components/admin/booking-list"
 export default async function AdminBookingsPage({
   searchParams,
 }: {
-  searchParams: { page?: string; status?: string; search?: string }
-}) {
+  searchParams: Promise<{ page?: string; status?: string; search?: string }>
+  }) {
+  const searchParam = await searchParams;
+  
   const supabase = await createClient()
-  const page = Number.parseInt(searchParams.page || "1")
+  const page = Number.parseInt(searchParam.page || "1")
   const pageSize = 10
-  const status = searchParams.status || ""
-  const search = searchParams.search || ""
+  const status = searchParam.status || ""
+  const search = searchParam.search || ""
 
   // Build the query
   let query = supabase.from("bookings").select(

@@ -4,13 +4,16 @@ import { AdminUserList } from "@/components/admin/user-list"
 export default async function AdminUsersPage({
   searchParams,
 }: {
-  searchParams: { page?: string; role?: string; search?: string }
-}) {
+  searchParams: Promise<{ page?: string; role?: string; search?: string }>
+  }) {
+  
+  const searchParam = await searchParams;
+  
   const supabase = await createClient()
-  const page = Number.parseInt(searchParams.page || "1")
+  const page = Number.parseInt(searchParam.page || "1")
   const pageSize = 10
-  const role = searchParams.role || ""
-  const search = searchParams.search || ""
+  const role = searchParam.role || ""
+  const search = searchParam.search || ""
 
   // Build the query
   let query = supabase

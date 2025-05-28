@@ -49,7 +49,7 @@ export default async function HostelDetailPage({ params }: { params: Promise<{ i
   // Track the view if user is authenticated
   const {
     data: { session },
-  } = await supabase.auth.getSession()
+  } = await supabase?.auth?.getSession()
 
   if (session) {
     // Record the view in hostel_views table

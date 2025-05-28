@@ -49,7 +49,7 @@ export default async function HostelsPage({
     `,
       { count: "exact" },
     )
-    // .eq("verified", true)
+    .eq("verified", true)
 
   // Apply filters
   if (university) {

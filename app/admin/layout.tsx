@@ -11,12 +11,12 @@ export default async function AdminLayout({
 }: {
   children: React.ReactNode
 }) {
-  const supabase = createClient()
+  const supabase = await createClient()
 
   // Get the current user
   const {
     data: { session },
-  } = await supabase.auth.getSession()
+  } = await supabase?.auth?.getSession()
 
   if (!session) {
     redirect("/auth/login")

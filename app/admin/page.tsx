@@ -5,7 +5,7 @@ import { AdminRecentActivity } from "@/components/admin/recent-activity"
 import { AdminHostelVerification } from "@/components/admin/hostel-verification"
 
 export default async function AdminDashboardPage() {
-  const supabase = createClient()
+  const supabase = await createClient()
 
   // Fetch dashboard statistics
   const [

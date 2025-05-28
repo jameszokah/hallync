@@ -15,7 +15,7 @@ export async function verifyHostel(hostelId: string) {
     // Log the activity
     const {
       data: { session },
-    } = await supabase.auth.getSession()
+    } = await supabase?.auth?.getSession()
 
     if (session) {
       await supabase.from("activity_log").insert({
@@ -55,7 +55,7 @@ export async function rejectHostel(hostelId: string) {
     // Log the activity
     const {
       data: { session },
-    } = await supabase.auth.getSession()
+    } = await supabase?.auth?.getSession()
 
     if (session) {
       await supabase.from("activity_log").insert({

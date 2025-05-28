@@ -9,7 +9,7 @@ export default async function PaymentConfirmationPage({ params }: { params: { id
   // Get the current user
   const {
     data: { session },
-  } = await supabase.auth.getSession()
+  } = await supabase?.auth?.getSession()
 
   if (!session) {
     redirect("/auth/login")

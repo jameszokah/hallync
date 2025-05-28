@@ -1,99 +1,113 @@
-"use client"
+"use client";
 
-import type React from "react"
+import type React from "react";
 
-import { createContext, useContext, useEffect, useState } from "react"
-import { useRouter, useSearchParams } from "next/navigation"
-import type { Session, User } from "@supabase/supabase-js"
-import { createClient } from "@/lib/supabase/client"
-import { useToast } from "@/components/ui/use-toast"
+import {
+  createContext,
+  Suspense,
+  useContext,
+  useEffect,
+  useState,
+} from "react";
+import { useRouter, useSearchParams } from "next/navigation";
+import type { Session, User } from "@supabase/supabase-js";
+import { createClient } from "@/lib/supabase/client";
+import { useToast } from "@/components/ui/use-toast";
 
 type AuthContextType = {
-  user: User | null
-  session: Session | null
-  isLoading: boolean
-  signUp: (email: string, password: string, metadata: any) => Promise<void>
-  signIn: (email: string, password: string) => Promise<{ success: boolean }>
-  signOut: () => Promise<void>
-  isOwner: boolean
-  isAdmin: boolean
-}
+  user: User | null;
+  session: Session | null;
+  isLoading: boolean;
+  signUp: (email: string, password: string, metadata: any) => Promise<void>;
+  signIn: (email: string, password: string) => Promise<{ success: boolean }>;
+  signOut: () => Promise<void>;
+  isOwner: boolean;
+  isAdmin: boolean;
+};
 
-const AuthContext = createContext<AuthContextType | undefined>(undefined)
+const AuthContext = createContext<AuthContextType | undefined>(undefined);
 
 export function AuthProvider({ children }: { children: React.ReactNode }) {
-  const supabase = createClient()
-  const [user, setUser] = useState<User | null>(null)
-  const [session, setSession] = useState<Session | null>(null)
-  const [isLoading, setIsLoading] = useState(true)
-  const [isOwner, setIsOwner] = useState(false)
-  const [isAdmin, setIsAdmin] = useState(false)
-  const router = useRouter()
-  const searchParams = useSearchParams()
-  const { toast } = useToast()
+  const supabase = createClient();
+  const [user, setUser] = useState<User | null>(null);
+  const [session, setSession] = useState<Session | null>(null);
+  const [isLoading, setIsLoading] = useState(true);
+  const [isOwner, setIsOwner] = useState(false);
+  const [isAdmin, setIsAdmin] = useState(false);
+  const router = useRouter();
+  const searchParams = useSearchParams();
+  const { toast } = useToast();
 
   useEffect(() => {
     const getSession = async () => {
-      setIsLoading(true)
+      setIsLoading(true);
       try {
         const {
           data: { session },
           error,
-        } = await supabase.auth.getSession()
+        } = await supabase?.auth?.getSession();
         if (error) {
-          throw error
+          throw error;
         }
 
-        setSession(session)
-        setUser(session?.user ?? null)
+        setSession(session);
+        setUser(session?.user ?? null);
 
         if (session?.user) {
           // Fetch user role from the database
-          const { data, error } = await supabase.from("users").select("role").eq("id", session.user.id).single()
+          const { data, error } = await supabase
+            .from("users")
+            .select("role")
+            .eq("id", session.user.id)
+            .single();
 
-          if (error) throw error
+          if (error) throw error;
 
-          setIsOwner(data?.role === "owner")
-          setIsAdmin(data?.role === "admin")
+          setIsOwner(data?.role === "owner");
+          setIsAdmin(data?.role === "admin");
         }
       } catch (error: any) {
-        console.error("Error getting session:", error.message)
+        console.error("Error getting session:", error.message);
       } finally {
-        setIsLoading(false)
+        setIsLoading(false);
       }
-    }
+    };
 
-    getSession()
+    getSession();
 
     const {
       data: { subscription },
     } = supabase.auth.onAuthStateChange(async (_event, session) => {
-      setSession(session)
-      setUser(session?.user ?? null)
+      setSession(session);
+      setUser(session?.user ?? null);
 
-      console.log("session in onAuthStateChange", session)
+      console.log("session in onAuthStateChange", session);
 
       if (session?.user) {
         // Fetch user role from the database
-        const { data, error } = await supabase.from("users").select("role").eq("id", session.user.id).single()
+        const { data, error } = await supabase
+          .from("users")
+          .select("role")
+          .eq("id", session.user.id)
+          .single();
 
         if (!error && data) {
-          setIsOwner(data.role === "owner")
-          setIsAdmin(data.role === "admin")
+          setIsOwner(data.role === "owner");
+          setIsAdmin(data.role === "admin");
         }
       }
 
       // Refresh the page to update server components
-      router.refresh()
-    })
+      router.refresh();
+    });
 
     return () => {
-      subscription.unsubscribe()
-    }
-  }, [supabase, router])
+      subscription.unsubscribe();
+    };
+  }, [supabase, router]);
 
   const signUp = async (email: string, password: string, metadata: any) => {
-    setIsLoading(true)
+    setIsLoading(true);
     try {
       const { data, error } = await supabase.auth.signUp({
         email,
@@ -101,9 +115,9 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
         options: {
           data: metadata,
         },
-      })
+      });
 
-      if (error) throw error
+      if (error) throw error;
 
       // Create a user record in our users table
       if (data.user) {
@@ -115,58 +129,56 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
           phone: metadata.phone,
           university: metadata.university,
           role: metadata.role || "student",
-        })
+        });
 
-
-
-        if (profileError) throw profileError
+        if (profileError) throw profileError;
       }
 
       toast({
         title: "Account created",
         description: "Please check your email to confirm your account",
-      })
+      });
 
       setTimeout(() => {
         toast({
           title: "Email confirmation sent",
           description: "Please check your email to confirm your account",
-        })
-      }, 1000)
+        });
+      }, 1000);
 
       // If email confirmation is not required, sign in the user immediately
       if (data.session) {
-        setSession(data.session)
-        setUser(data.user)
+        setSession(data.session);
+        setUser(data.user);
 
         // Get the redirect URL from query params
-        const redirectTo = searchParams.get("redirect") || "/dashboard"
-        router.push(redirectTo)
+        const redirectTo = searchParams.get("redirect") || "/dashboard";
+        router.push(redirectTo);
       } else {
-        router.push("/auth/login")
+        router.push("/auth/login");
       }
     } catch (error: any) {
-      console.error("Error signing up:", error.message)
+      console.error("Error signing up:", error.message);
       toast({
         title: "Sign Up Error",
         description: error.message,
         variant: "destructive",
-      })
-      throw error
+      });
+      throw error;
     } finally {
-      setIsLoading(false)
+      setIsLoading(false);
     }
-  }
+  };
 
   const signIn = async (email: string, password: string) => {
-    setIsLoading(true)
+    setIsLoading(true);
     try {
       const { data, error } = await supabase.auth.signInWithPassword({
         email,
         password,
-      })
+      });
 
-      if (error) throw error
+      if (error) throw error;
 
       // Fetch user role
       if (data.user) {
@@ -174,60 +186,64 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
           .from("users")
           .select("role")
           .eq("id", data.user.id)
-          .single()
+          .single();
 
-        if (userError) throw userError
+        if (userError) throw userError;
 
-        setIsOwner(userData.role === "owner")
-        setIsAdmin(userData.role === "admin")
+        setIsOwner(userData.role === "owner");
+        setIsAdmin(userData.role === "admin");
 
         // Get the redirect URL from query params
         const redirectTo =
           searchParams.get("redirect") ||
-          (userData.role === "admin" ? "/admin" : userData.role === "owner" ? "/owner/dashboard" : "/dashboard")
+          (userData.role === "admin"
+            ? "/admin"
+            : userData.role === "owner"
+            ? "/owner/dashboard"
+            : "/dashboard");
 
-        router.push(redirectTo)
+        router.push(redirectTo);
       }
 
       toast({
         title: "Welcome back",
         description: "You have successfully signed in",
-      })
+      });
 
-      return { success: true }
+      return { success: true };
     } catch (error: any) {
-      console.error("Error signing in:", error.message)
-      throw error
+      console.error("Error signing in:", error.message);
+      throw error;
     } finally {
-      setIsLoading(false)
+      setIsLoading(false);
     }
-  }
+  };
 
   const signOut = async () => {
     try {
-      const { error } = await supabase.auth.signOut()
-      if (error) throw error
+      const { error } = await supabase.auth.signOut();
+      if (error) throw error;
 
-      setUser(null)
-      setSession(null)
-      setIsOwner(false)
-      setIsAdmin(false)
+      setUser(null);
+      setSession(null);
+      setIsOwner(false);
+      setIsAdmin(false);
 
-      router.push("/")
+      router.push("/");
 
       toast({
         title: "Signed out",
         description: "You have been successfully signed out",
-      })
+      });
     } catch (error: any) {
-      console.error("Error signing out:", error.message)
+      console.error("Error signing out:", error.message);
       toast({
         title: "Sign Out Error",
         description: error.message,
         variant: "destructive",
-      })
+      });
     }
-  }
+  };
 
   const value = {
     user,
@@ -238,15 +254,21 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     signOut,
     isOwner,
     isAdmin,
-  }
+  };
 
-  return <AuthContext.Provider value={value}>{children}</AuthContext.Provider>
+  return (
+    <>
+      <Suspense>
+        <AuthContext.Provider value={value}>{children}</AuthContext.Provider>
+      </Suspense>
+    </>
+  );
 }
 
 export const useAuth = () => {
-  const context = useContext(AuthContext)
+  const context = useContext(AuthContext);
   if (context === undefined) {
-    throw new Error("useAuth must be used within an AuthProvider")
+    throw new Error("useAuth must be used within an AuthProvider");
   }
-  return context
-}
+  return context;
+};

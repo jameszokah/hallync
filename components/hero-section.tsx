@@ -1,40 +1,47 @@
-"use client"
+"use client";
 
-import type React from "react"
+import type React from "react";
 
-import { useState } from "react"
-import { useRouter } from "next/navigation"
-import Image from "next/image"
-import { Search } from "lucide-react"
+import { useState } from "react";
+import { useRouter } from "next/navigation";
+import Image from "next/image";
+import { Search } from "lucide-react";
+import Link from "next/link";
 
-import { Button } from "@/components/ui/button"
-import { Input } from "@/components/ui/input"
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
+import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
 
 interface University {
-  id: string
-  name: string
-  location: string
+  id: string;
+  name: string;
+  location: string;
 }
 
 interface HeroSectionProps {
-  universities: University[]
+  universities: University[];
 }
 
 export function HeroSection({ universities }: HeroSectionProps) {
-  const router = useRouter()
-  const [university, setUniversity] = useState("")
-  const [location, setLocation] = useState("")
+  const router = useRouter();
+  const [university, setUniversity] = useState("");
+  const [location, setLocation] = useState("");
 
   const handleSearch = (e: React.FormEvent) => {
-    e.preventDefault()
+    e.preventDefault();
 
-    const params = new URLSearchParams()
-    if (university) params.set("university", university)
-    if (location) params.set("location", location)
+    const params = new URLSearchParams();
+    if (university) params.set("university", university);
+    if (location) params.set("location", location);
 
-    router.push(`/hostels?${params.toString()}`)
-  }
+    router.push(`/hostels?${params.toString()}`);
+  };
 
   return (
     <section className="relative bg-primary text-primary-foreground">
@@ -48,14 +55,24 @@ export function HeroSection({ universities }: HeroSectionProps) {
         />
       </div>
       <div className="container relative z-10 mx-auto px-4 py-16 md:py-24">
-        <div className="max-w-3xl mx-auto text-center mb-8">
+        <div className="absolute top-4 right-4 z-20">
+          <Link href="/auth/login">
+            <Button variant="secondary" className="text-sm">
+              Login / Register
+            </Button>
+          </Link>
+        </div>
+        <div className="max-w-3xl mx-auto text-center mb-8 pt-12 md:pt-0">
           <h1 className="text-4xl font-bold tracking-tight sm:text-5xl md:text-6xl mb-4">
             Find Your Perfect Student Hostel in Ghana
           </h1>
           <p className="text-xl md:text-2xl opacity-90 mb-8">
             Verified, affordable accommodation for university students
           </p>
-          <form onSubmit={handleSearch} className="bg-background text-foreground rounded-lg p-4 shadow-lg">
+          <form
+            onSubmit={handleSearch}
+            className="bg-background text-foreground rounded-lg p-4 shadow-lg"
+          >
             <div className="flex flex-col md:flex-row gap-4">
               <div className="flex-1">
                 <Select value={university} onValueChange={setUniversity}>
@@ -101,5 +118,5 @@ export function HeroSection({ universities }: HeroSectionProps) {
         </div>
       </div>
     </section>
-  )
+  );
 }

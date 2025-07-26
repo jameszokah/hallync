@@ -4,9 +4,9 @@ import { Star, MapPin, Wifi, Shield } from "lucide-react"
 
 import { Badge } from "@/components/ui/badge"
 import { Button } from "@/components/ui/button"
-import { Hostel } from "@/lib/supabase/database.types"
+import { Hostels } from "@/app/generated/prisma"
 
-  interface IHostel extends Hostel {
+  export interface IHostel extends Hostels {
     id: string
     name: string
     location: string
@@ -56,16 +56,16 @@ export function FeaturedHostels({ hostels }: FeaturedHostelsProps) {
             </div>
             <div className="p-4">
               <div className="flex justify-between items-start mb-2">
-                <h3 className="font-semibold text-lg">{hostel.name}</h3>
+                <h3 className="font-semibold text-lg">{hostel?.name}</h3>
                 <div className="flex items-center">
                   <Star className="h-4 w-4 fill-yellow-400 text-yellow-400 mr-1" />
-                  <span className="text-sm font-medium">{hostel.rating.toFixed(1)}</span>
-                  <span className="text-xs text-muted-foreground ml-1">({hostel.reviews})</span>
+                  <span className="text-sm font-medium">{hostel?.rating?.toFixed(1)}</span>
+                  <span className="text-xs text-muted-foreground ml-1">({hostel?.reviews})</span>
                 </div>
               </div>
               <div className="flex items-center text-muted-foreground text-sm mb-3">
                 <MapPin className="h-4 w-4 mr-1 flex-shrink-0" />
-                <span className="truncate">{hostel.location}</span>
+                <span className="truncate">{hostel?.location}</span>
               </div>
               <div className="flex flex-wrap gap-2 mb-3">
                 {hostel.amenities.slice(0, 3).map((amenity, index) => (
@@ -83,8 +83,8 @@ export function FeaturedHostels({ hostels }: FeaturedHostelsProps) {
               </div>
               <div className="flex justify-between items-center">
                 <div>
-                  <span className="font-bold text-lg">₵{hostel.price.toLocaleString()}</span>
-                  <span className="text-muted-foreground text-xs">/{hostel.priceUnit}</span>
+                  <span className="font-bold text-lg">₵{hostel?.price?.toLocaleString()}</span>
+                  <span className="text-muted-foreground text-xs">/{hostel?.priceUnit}</span>
                 </div>
                 <Button size="sm" variant="secondary">
                   View Details

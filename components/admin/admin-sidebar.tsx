@@ -16,6 +16,7 @@ import {
 } from "@/components/ui/sidebar"
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar"
 import { useAuth } from "@/components/auth/auth-provider"
+import Image from "next/image"
 
 export function AdminSidebar() {
   const pathname = usePathname()
@@ -64,7 +65,10 @@ export function AdminSidebar() {
       <SidebarHeader>
         <div className="flex items-center gap-2 px-2">
           <Shield className="h-6 w-6 text-primary" />
-          <div className="font-bold text-xl">Hallynk Admin</div>
+          <div className="font-bold text-xl">
+            <Image src="/logo.svg" alt="Hallynk" width={100} height={100} className="w-10 h-10 mr-2" />
+            Admin
+          </div>
         </div>
       </SidebarHeader>
 

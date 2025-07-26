@@ -3,6 +3,7 @@ import { Facebook, Twitter, Instagram, Mail, Phone } from "lucide-react"
 
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
+import Image from "next/image"
 
 export function Footer() {
   return (
@@ -10,7 +11,9 @@ export function Footer() {
       <div className="container mx-auto px-4 py-12">
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-8">
           <div>
-            <h3 className="font-bold text-lg mb-4">Hallynk</h3>
+            <div className="font-bold text-lg mb-4">
+              <Image src="/logo.svg" alt="Hallynk" width={100} height={100} className="w-14 h-14" />
+            </div>
             <p className="text-muted-foreground mb-4">
               Connecting university students with verified, affordable accommodation across Ghana.
             </p>

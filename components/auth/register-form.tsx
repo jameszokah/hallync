@@ -1,106 +1,100 @@
-"use client"
+"use client";
 
-import type React from "react"
-
-import { useState } from "react"
-import { useSearchParams } from "next/navigation"
-import Link from "next/link"
-import { useAuth } from "./auth-provider"
-import { Button } from "@/components/ui/button"
-import { Input } from "@/components/ui/input"
-import { Label } from "@/components/ui/label"
-import { Checkbox } from "@/components/ui/checkbox"
-import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from "@/components/ui/card"
-import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group"
-import { Loader2 } from "lucide-react"
-import { useToast } from "@/components/ui/use-toast"
-import { createClient } from "@/lib/supabase/client"
+import { useState } from "react";
+import { useRouter } from "next/navigation";
+import Link from "next/link";
+import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
+import {
+  Card,
+  CardContent,
+  CardDescription,
+  CardFooter,
+  CardHeader,
+  CardTitle,
+} from "@/components/ui/card";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
+import { Loader2 } from "lucide-react";
+import { registerAction } from "@/lib/actions/auth";
+import { toast } from "sonner";
 
 export function RegisterForm() {
-  const { signUp, isLoading } = useAuth()
-  const searchParams = useSearchParams()
-  const { toast } = useToast()
-  const [firstName, setFirstName] = useState("")
-  const [lastName, setLastName] = useState("")
-  const [email, setEmail] = useState("")
-  const [phone, setPhone] = useState("")
-  const [password, setPassword] = useState("")
-  const [university, setUniversity] = useState("")
-  const [role, setRole] = useState<"student" | "owner">("student")
-  const [agreeTerms, setAgreeTerms] = useState(false)
-  const [universities, setUniversities] = useState<{ id: string; name: string }[]>([])
-
-  // Fetch universities for the dropdown
-  useState(() => {
-    const fetchUniversities = async () => {
-      const supabase = createClient()
-      const { data } = await supabase.from("universities").select("id, name").order("name")
-      if (data) {
-        setUniversities(data)
-      }
-    }
-    fetchUniversities()
-  })
-
-  const redirectPath = searchParams.get("redirect") || ""
+  const [isLoading, setIsLoading] = useState(false);
+  const [firstName, setFirstName] = useState("");
+  const [lastName, setLastName] = useState("");
+  const [email, setEmail] = useState("");
+  const [phone, setPhone] = useState("");
+  const [password, setPassword] = useState("");
+  const [confirmPassword, setConfirmPassword] = useState("");
+  const [role, setRole] = useState("STUDENT");
+  const router = useRouter();
 
   const handleSubmit = async (e: React.FormEvent) => {
-    e.preventDefault()
-
-    if (!agreeTerms) {
-      toast({
-        title: "Terms required",
-        description: "You must agree to the terms and conditions",
-        variant: "destructive",
-      })
-      return
+    e.preventDefault();
+    if (password !== confirmPassword) {
+      toast.error("Passwords do not match");
+      return;
     }
-
-    if (password.length < 6) {
-      toast({
-        title: "Password too short",
-        description: "Password must be at least 6 characters long",
-        variant: "destructive",
-      })
-      return
-    }
-
-    const metadata = {
-      first_name: firstName,
-      last_name: lastName,
-      phone,
-      university: role === "student" ? university : null,
-      role,
-    }
-
+    setIsLoading(true);
     try {
-      await signUp(email, password, metadata)
-      // Redirect is handled in the auth provider
+      const result = await registerAction(
+        email,
+        password,
+        firstName,
+        lastName,
+        phone,
+        role
+      );
+
+      if (result.success) {
+        toast.success("Registration successful! Redirecting...");
+        // Redirect will be handled by the server action
+        router.push("/");
+      } else {
+        toast.error(result.error || "Registration failed");
+      }
     } catch (error: any) {
-      toast({
-        title: "Registration failed",
-        description: error.message || "An error occurred during registration",
-        variant: "destructive",
-      })
+      toast.error(error.message || "An unexpected error occurred.");
+    } finally {
+      setIsLoading(false);
     }
-  }
+  };
 
   return (
     <Card>
       <CardHeader>
         <CardTitle>Create an account</CardTitle>
-        <CardDescription>Join Hallynk to find and book student hostels across Ghana</CardDescription>
+        <CardDescription>
+          Join Hallynk to find your perfect student hostel
+        </CardDescription>
       </CardHeader>
       <form onSubmit={handleSubmit}>
         <CardContent className="space-y-4">
           <div className="grid grid-cols-2 gap-4">
             <div className="space-y-2">
               <Label htmlFor="first-name">First name</Label>
-              <Input id="first-name" value={firstName} onChange={(e) => setFirstName(e.target.value)} required />
+              <Input
+                id="first-name"
+                value={firstName}
+                onChange={(e) => setFirstName(e.target.value)}
+                required
+              />
             </div>
             <div className="space-y-2">
               <Label htmlFor="last-name">Last name</Label>
-              <Input id="last-name" value={lastName} onChange={(e) => setLastName(e.target.value)} required />
+              <Input
+                id="last-name"
+                value={lastName}
+                onChange={(e) => setLastName(e.target.value)}
+                required
+              />
             </div>
           </div>
           <div className="space-y-2">
@@ -119,7 +113,6 @@ export function RegisterForm() {
             <Input
               id="phone"
               type="tel"
-              placeholder="+233 XX XXX XXXX"
               value={phone}
               onChange={(e) => setPhone(e.target.value)}
               required
@@ -133,73 +126,50 @@ export function RegisterForm() {
               value={password}
               onChange={(e) => setPassword(e.target.value)}
               required
-              minLength={6}
             />
-            <p className="text-xs text-muted-foreground">Password must be at least 6 characters long</p>
           </div>
-
           <div className="space-y-2">
-            <Label>I am a:</Label>
-            <RadioGroup value={role} onValueChange={(value) => setRole(value as "student" | "owner")}>
-              <div className="flex items-center space-x-2">
-                <RadioGroupItem value="student" id="student" />
-                <Label htmlFor="student">Student looking for accommodation</Label>
-              </div>
-              <div className="flex items-center space-x-2">
-                <RadioGroupItem value="owner" id="owner" />
-                <Label htmlFor="owner">Hostel owner looking to list property</Label>
-              </div>
-            </RadioGroup>
-          </div>
-
-          {role === "student" && (
-            <div className="space-y-2">
-              <Label htmlFor="university">University</Label>
-              <select
-                id="university"
-                className="flex h-10 w-full rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background file:border-0 file:bg-transparent file:text-sm file:font-medium placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50"
-                value={university}
-                onChange={(e) => setUniversity(e.target.value)}
-                required={role === "student"}
-              >
-                <option value="">Select your university</option>
-                {universities.map((uni) => (
-                  <option key={uni.id} value={uni.id}>
-                    {uni.name}
-                  </option>
-                ))}
-              </select>
-            </div>
-          )}
-
-          <div className="flex items-center space-x-2">
-            <Checkbox
-              id="terms"
-              checked={agreeTerms}
-              onCheckedChange={(checked) => setAgreeTerms(checked as boolean)}
+            <Label htmlFor="confirm-password">Confirm password</Label>
+            <Input
+              id="confirm-password"
+              type="password"
+              value={confirmPassword}
+              onChange={(e) => setConfirmPassword(e.target.value)}
               required
             />
-            <Label htmlFor="terms" className="text-sm font-normal">
-              I agree to the{" "}
-              <Link href="/terms" className="text-primary hover:underline">
-                terms and conditions
-              </Link>
-            </Label>
+          </div>
+          <div className="space-y-2">
+            <Label>I am a</Label>
+            <Select value={role} onValueChange={setRole}>
+              <SelectTrigger>
+                <SelectValue placeholder="Select your role" />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="STUDENT">Student</SelectItem>
+                <SelectItem value="OWNER">Hostel Owner</SelectItem>
+              </SelectContent>
+            </Select>
           </div>
         </CardContent>
         <CardFooter className="flex flex-col">
-          <Button className="w-full mb-4" type="submit" disabled={isLoading || !agreeTerms}>
+          <Button className="w-full" type="submit" disabled={isLoading}>
             {isLoading ? (
               <>
                 <Loader2 className="mr-2 h-4 w-4 animate-spin" />
                 Creating account...
               </>
             ) : (
-              "Create Account"
+              "Create account"
             )}
           </Button>
+          {/* <p className="mt-4 text-sm text-center">
+            Already have an account?{" "}
+            <Link href="/auth/login" className="text-primary hover:underline">
+              Login
+            </Link>
+          </p> */}
         </CardFooter>
       </form>
     </Card>
-  )
+  );
 }

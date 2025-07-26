@@ -70,27 +70,29 @@ import {
   DropdownMenuItem,
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
-
-interface Hostel {
-  id: string;
-  name: string;
-  location: string;
-  university: string;
-  verified: boolean;
-  primaryImage: string;
-  rating: number;
-  reviews: number;
-  lowestPrice: number;
-  amenities: string[];
-}
+import { HostelImages, HostelReviews, Hostels } from "@/app/generated/prisma";
 
 interface University {
   id: string;
   name: string;
 }
 
+interface HostelWithExtras extends Hostels {
+  id: string;
+  name: string;
+  description: string;
+  location: string;
+  verified: boolean;
+  amenities: any;
+  images: HostelImages[];
+  reviews: number;
+  lowestPrice: number;
+  primaryImage: string;
+  rating: number;
+}
+
 interface HostelsListProps {
-  hostels: Hostel[];
+  hostels: HostelWithExtras[];
   totalHostels: number;
   currentPage: number;
   pageSize: number;
@@ -124,11 +126,13 @@ function Filters({
   universities,
   filters,
   onFilterChange,
+  applyFilters,
   className,
 }: {
   universities: University[];
   filters: HostelsListProps["filters"];
   onFilterChange: (newFilters: Partial<HostelsListProps["filters"]>) => void;
+  applyFilters?: (newFilters: Partial<HostelsListProps["filters"]>) => void;
   className?: string;
 }) {
   const [priceRange, setPriceRange] = useState<number[]>([
@@ -139,7 +143,7 @@ function Filters({
     filters.amenities
   );
   const [roomType, setRoomType] = useState(filters.roomType);
-  // const [distance, setDistance] = useState(filters.distance); // Assuming distance filter might be added later
+  const [distance, setDistance] = useState(filters.distance);
 
   const handleAmenityChange = (
     amenity: string,
@@ -160,6 +164,25 @@ function Filters({
   const handleRoomTypeChange = (value: string) => {
     setRoomType(value);
     onFilterChange({ roomType: value === "all" ? "" : value });
+  };
+
+  const handleDistanceChange = (value: string) => {
+    setDistance(value);
+    onFilterChange({ distance: value === "all" ? "" : value });
+  };
+
+  const handleApplyFilters = () => {
+    const currentFilters = {
+      minPrice: priceRange[0],
+      maxPrice: priceRange[1],
+      amenities: selectedAmenities,
+      roomType: roomType === "all" ? "" : roomType,
+      distance: distance === "all" ? "" : distance,
+    };
+
+    if (applyFilters) {
+      applyFilters(currentFilters);
+    }
   };
 
   return (
@@ -223,6 +246,38 @@ function Filters({
               ))}
             </AccordionContent>
           </AccordionItem>
+          <AccordionItem value="distance">
+            <AccordionTrigger className="text-sm font-medium">
+              Distance from Campus
+            </AccordionTrigger>
+            <AccordionContent className="pt-2 space-y-2">
+              <Select
+                value={distance || "all"}
+                onValueChange={handleDistanceChange}
+              >
+                <SelectTrigger className="w-full text-xs">
+                  <SelectValue placeholder="Select Distance" />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="all" className="text-xs">
+                    All Distances
+                  </SelectItem>
+                  <SelectItem value="0-5" className="text-xs">
+                    <span className="font-medium">0-5 km</span>
+                  </SelectItem>
+                  <SelectItem value="5-10" className="text-xs">
+                    <span className="font-medium">5-10 km</span>
+                  </SelectItem>
+                  <SelectItem value="10-15" className="text-xs">
+                    <span className="font-medium">10-15 km</span>
+                  </SelectItem>
+                  <SelectItem value="15-20" className="text-xs">
+                    <span className="font-medium">15-20 km</span>
+                  </SelectItem>
+                </SelectContent>
+              </Select>
+            </AccordionContent>
+          </AccordionItem>
         </Accordion>
 
         <div>
@@ -270,7 +325,7 @@ function Filters({
           </Select>
         </div> */}
 
-        <Button onClick={() => onFilterChange({})} className="w-full mt-4">
+        <Button onClick={handleApplyFilters} className="w-full mt-4">
           Apply Filters
         </Button>
       </div>
@@ -278,83 +333,122 @@ function Filters({
   );
 }
 
-function HostelCard({ hostel }: { hostel: Hostel }) {
+function HostelCard({ hostel }: { hostel: HostelWithExtras }) {
   return (
-    <Card className="overflow-hidden shadow-sm hover:shadow-md transition-shadow duration-200 flex flex-col h-full">
-      <Link href={`/hostels/${hostel.id}`} className="block">
-        <div className="relative w-full h-48 md:h-56">
+    <Card className="group overflow-hidden border border-border/40 hover:border-primary/20 shadow-sm hover:shadow-md transition-all duration-300 flex flex-col h-full rounded-xl">
+      <Link
+        href={`/hostels/${hostel.id}`}
+        className="relative block overflow-hidden"
+      >
+        <div className="relative w-full h-52 md:h-60 overflow-hidden">
+          <div className="absolute inset-0 bg-gradient-to-t from-black/50 via-transparent to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-500 z-10" />
           <Image
-            src={hostel.primaryImage || "/placeholder.svg"}
+            src={hostel.images[0]?.url || "/placeholder.svg"}
             alt={hostel.name}
             layout="fill"
             objectFit="cover"
-            className="transition-transform duration-300 group-hover:scale-105"
+            className="transition-transform duration-700 ease-out group-hover:scale-110 z-0"
           />
-          {hostel.verified && (
-            <Badge
-              variant="secondary"
-              className="absolute top-2 right-2 bg-green-500 text-white"
-            >
-              Verified
-            </Badge>
-          )}
+          <div className="absolute top-3 left-3 z-20 flex items-center gap-1.5">
+            <div className="flex items-center bg-white/90 backdrop-blur-sm px-2 py-1 rounded-full shadow-sm">
+              <Star className="h-3.5 w-3.5 text-yellow-500 fill-yellow-500 mr-0.5" />
+              <span className="text-xs font-semibold">
+                {hostel.rating.toFixed(1)}
+              </span>
+            </div>
+            {hostel.verified && (
+              <Badge
+                variant="secondary"
+                className="bg-green-600/90 backdrop-blur-sm text-white shadow-sm text-[10px] h-6 px-2"
+              >
+                <Shield className="h-3 w-3 mr-0.5" />
+                Verified
+              </Badge>
+            )}
+          </div>
+
+          <div className="absolute bottom-0 left-0 right-0 p-3 z-20">
+            <div className="flex gap-1.5 flex-wrap">
+              {hostel.amenities &&
+                Array.isArray(JSON.parse(JSON.stringify(hostel.amenities))) &&
+                JSON.parse(JSON.stringify(hostel.amenities))
+                  .slice(0, 3)
+                  .map((amenity: any) => (
+                    <Badge
+                      key={amenity?.toString() || ""}
+                      variant="outline"
+                      className="text-[10px] px-1.5 py-0.5 font-medium bg-white/80 backdrop-blur-sm text-black border-none shadow-sm"
+                    >
+                      <AmenityIcon amenity={amenity?.toString() || ""} />
+                      {amenity
+                        ?.toString()
+                        ?.split("_")
+                        .map(
+                          (w: string) => w.charAt(0).toUpperCase() + w.slice(1)
+                        )
+                        .join(" ")}
+                    </Badge>
+                  ))}
+              {hostel.amenities &&
+                Array.isArray(JSON.parse(JSON.stringify(hostel.amenities))) &&
+                JSON.parse(JSON.stringify(hostel.amenities)).length > 3 && (
+                  <Badge
+                    variant="outline"
+                    className="text-[10px] px-1.5 py-0.5 font-medium bg-white/80 backdrop-blur-sm border-none shadow-sm"
+                  >
+                    +{JSON.parse(JSON.stringify(hostel.amenities)).length - 3}{" "}
+                    more
+                  </Badge>
+                )}
+            </div>
+          </div>
         </div>
       </Link>
+
       <CardHeader className="p-4 flex-grow">
-        <Link href={`/hostels/${hostel.id}`} className="block">
-          <CardTitle className="text-lg font-semibold hover:text-primary transition-colors">
-            {hostel.name}
-          </CardTitle>
-        </Link>
-        <CardDescription className="text-xs text-muted-foreground flex items-center mt-1">
-          <MapPin className="h-3.5 w-3.5 mr-1" /> {hostel.location}
+        <div className="flex items-center justify-between">
+          <Link href={`/hostels/${hostel.id}`} className="block w-full">
+            <CardTitle className="text-lg font-semibold group-hover:text-primary transition-colors line-clamp-1">
+              {hostel.name}
+            </CardTitle>
+          </Link>
+        </div>
+        <CardDescription className="text-xs text-muted-foreground flex items-center mt-1.5 line-clamp-1">
+          <MapPin className="h-3 w-3 flex-shrink-0 mr-1" />
+          <span className="truncate">{hostel.location}</span>
         </CardDescription>
-        <div className="flex items-center mt-2">
-          <Star className="h-4 w-4 text-yellow-400 mr-1" />
-          <span className="text-sm font-medium">
-            {hostel.rating > 0 ? hostel.rating.toFixed(1) : "New"}
-          </span>
-          <span className="text-xs text-muted-foreground ml-1">
-            ({hostel.reviews} reviews)
-          </span>
+        <div className="flex items-center mt-3 text-xs text-muted-foreground">
+          <span className="truncate">({hostel.reviews} reviews)</span>
+          <span className="mx-1.5">•</span>
+          <span className="truncate">Student Choice</span>
         </div>
       </CardHeader>
-      <CardContent className="p-4 pt-0">
-        <div className="flex flex-wrap gap-1.5 mb-3">
-          {Array.isArray(hostel.amenities) &&
-            hostel.amenities.slice(0, 3).map((amenity) => (
-              <Badge
-                key={amenity}
-                variant="outline"
-                className="text-xs px-1.5 py-0.5 font-normal"
-              >
-                <AmenityIcon amenity={amenity} />
-                {amenity
-                  .split("_")
-                  .map((w) => w.charAt(0).toUpperCase() + w.slice(1))
-                  .join(" ")}
-              </Badge>
-            ))}
-          {Array.isArray(hostel.amenities) && hostel.amenities.length > 3 && (
-            <Badge
-              variant="outline"
-              className="text-xs px-1.5 py-0.5 font-normal"
-            >
-              +{hostel.amenities.length - 3} more
-            </Badge>
-          )}
-        </div>
-      </CardContent>
+
       <CardFooter className="p-4 pt-0 border-t mt-auto">
         <div className="flex justify-between items-center w-full">
-          <div>
-            <p className="text-xs text-muted-foreground">Starting from</p>
-            <p className="text-lg font-bold text-primary">
-              ₵{hostel.lowestPrice.toLocaleString()}
+          <div className="group-hover:translate-y-[-2px] transition-transform duration-300">
+            <p className="text-[11px] uppercase tracking-wide text-muted-foreground font-medium">
+              Starting from
             </p>
+            <div className="flex items-baseline">
+              <p className="text-xl font-bold text-primary">
+                ₵{hostel.lowestPrice.toLocaleString()}
+              </p>
+              <span className="text-xs text-muted-foreground ml-1">
+                /semester
+              </span>
+            </div>
           </div>
-          <Button asChild size="sm">
-            <Link href={`/hostels/${hostel.id}`}>View Details</Link>
+          <Button
+            size="sm"
+            className="rounded-full px-4 shadow-sm transition-all duration-300 group-hover:bg-primary group-hover:shadow group-hover:scale-[1.02]"
+          >
+            <Link
+              href={`/hostels/${hostel.id}`}
+              className="flex items-center gap-1"
+            >
+              View Details
+            </Link>
           </Button>
         </div>
       </CardFooter>
@@ -379,7 +473,7 @@ export function HostelsList({
     initialFilters.sort || "recommended"
   );
   const [university, setUniversity] = useState(initialFilters.university);
-
+  const [open, setOpen] = useState(false);
   const totalPages = Math.ceil(totalHostels / pageSize);
 
   const updateUrlParams = (
@@ -402,7 +496,7 @@ export function HostelsList({
       params.set("amenities", mergedFilters.amenities.join(","));
     }
     if (mergedFilters.roomType) params.set("roomType", mergedFilters.roomType);
-    // if (mergedFilters.distance) params.set("distance", mergedFilters.distance);
+    if (mergedFilters.distance) params.set("distance", mergedFilters.distance);
 
     const sortToUse = newSort || sortOption;
     if (sortToUse) params.set("sort", sortToUse);
@@ -418,12 +512,16 @@ export function HostelsList({
   ) => {
     const updatedFullFilters = { ...currentFilters, ...newFilters };
     setCurrentFilters(updatedFullFilters);
+    setOpen(false);
     // Apply immediately or wait for a button click? For now, let's assume an "Apply Filters" button in the Filters component
     // For instant application: updateUrlParams(newFilters);
   };
 
-  const applyAllFilters = () => {
-    updateUrlParams({}); // Pass empty to use currentFilters state
+  const applyAllFilters = (
+    newFilters: Partial<HostelsListProps["filters"]>
+  ) => {
+    updateUrlParams(newFilters); // Pass empty to use currentFilters state
+    setOpen(false);
   };
 
   const handleSearchSubmit = (e: React.FormEvent) => {
@@ -501,68 +599,82 @@ export function HostelsList({
   return (
     <div className="flex min-h-screen flex-col bg-muted/40">
       {/* Header Section */}
-      <header className="sticky top-0 z-30 border-b bg-background shadow-sm">
-        <div className="container mx-auto px-4 py-3">
-          <div className="flex flex-col sm:flex-row items-center gap-4">
-            <div className="flex items-center w-full justify-between gap-4 flex-shrink-0">
-              <Link href="/" className="font-bold text-xl">
-                Hallynk
+      <header className="sticky top-0 z-30 border-b bg-primary/95 backdrop-blur-sm shadow-sm transition-all duration-200">
+        <div className="container mx-auto px-4 py-4">
+          <div className="flex flex-col md:flex-row items-center gap-4 md:gap-6">
+            <div className="flex items-center w-full md:w-auto justify-between gap-4 flex-shrink-0">
+              <Link
+                href="/"
+                className="font-bold text-xl text-white flex items-center gap-2"
+              >
+                <Image
+                  src="/logo.svg"
+                  alt="Hallynk"
+                  width={100}
+                  height={100}
+                  className="w-14 h-14"
+                />
               </Link>
+
               {/* Mobile Filter Trigger */}
-              <Sheet>
-                <SheetTrigger asChild>
-                  <Button variant="outline" size="icon" className="md:hidden">
-                    <ListFilter className="h-5 w-5" />
-                    <span className="sr-only">Open Filters</span>
-                  </Button>
-                </SheetTrigger>
-                <SheetContent
-                  side="left"
-                  className="w-full max-w-xs sm:max-w-sm"
-                >
-                  <SheetHeader>
-                    <SheetTitle>Filter Hostels</SheetTitle>
-                  </SheetHeader>
-                  <Filters
-                    universities={universities}
-                    filters={currentFilters}
-                    onFilterChange={(newPartialFilters) => {
-                      // In sheet, filters are applied via the button inside Filters component
-                      // So, just update the state here.
-                      const updated = {
-                        ...currentFilters,
-                        ...newPartialFilters,
-                      };
-                      setCurrentFilters(updated);
-                    }}
-                    className="border-r-0 p-0" // Remove border and padding for sheet
-                  />
-                </SheetContent>
-              </Sheet>
+              <div className="flex items-center gap-2 md:hidden">
+                <Sheet open={open} onOpenChange={setOpen}>
+                  <SheetTrigger asChild>
+                    <Button
+                      variant="outline"
+                      size="sm"
+                      className="flex items-center gap-2"
+                    >
+                      <ListFilter className="h-4 w-4" />
+                      <span className="text-xs">Filters</span>
+                    </Button>
+                  </SheetTrigger>
+                  <SheetContent
+                    side="left"
+                    className="w-full max-w-xs sm:max-w-sm"
+                  >
+                    <SheetHeader>
+                      <SheetTitle>Filter Hostels</SheetTitle>
+                    </SheetHeader>
+                    <Filters
+                      universities={universities}
+                      filters={currentFilters}
+                      onFilterChange={(newPartialFilters) => {
+                        // In sheet, filters are applied via the button inside Filters component
+                        // So, just update the state here.
+                        const updated = {
+                          ...currentFilters,
+                          ...newPartialFilters,
+                        };
+                        setCurrentFilters(updated);
+                      }}
+                      applyFilters={applyAllFilters}
+                      className="border-r-0 p-0" // Remove border and padding for sheet
+                    />
+                  </SheetContent>
+                </Sheet>
+              </div>
             </div>
 
-            <div className="flex-grow w-full sm:w-auto">
-              <form
-                onSubmit={handleSearchSubmit}
-                className="relative w-full max-w-md mx-auto sm:mx-0"
-              >
+            <div className="flex-grow w-full md:max-w-md my-2 md:my-0">
+              <form onSubmit={handleSearchSubmit} className="relative w-full">
                 <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
                 <Input
                   type="search"
                   placeholder="Search by location, hostel name..."
-                  className="pl-10 w-full"
+                  className="pl-10 w-full text-sm border-primary/20 focus:border-primary/40 rounded-lg"
                   value={searchQuery}
                   onChange={(e) => setSearchQuery(e.target.value)}
                 />
               </form>
             </div>
 
-            <div className="flex items-center gap-2 w-full sm:w-auto justify-between sm:justify-end">
+            <div className="flex items-center gap-3 w-full md:w-auto justify-between md:justify-end md:ml-auto">
               <Select
                 value={university || "all"}
                 onValueChange={handleUniversityChange}
               >
-                <SelectTrigger className="w-full sm:w-48 text-sm">
+                <SelectTrigger className="w-full sm:w-40 text-sm rounded-lg">
                   <SelectValue placeholder="Select University" />
                 </SelectTrigger>
                 <SelectContent>
@@ -581,13 +693,19 @@ export function HostelsList({
                 <DropdownMenuTrigger asChild>
                   <Button
                     variant="outline"
-                    className="w-full sm:w-auto text-sm"
+                    size="sm"
+                    className="text-sm rounded-lg"
                   >
-                    Sort by: {sortOption.replace("-", " ")}
-                    <ChevronDown className="ml-2 h-4 w-4" />
+                    <span className="hidden sm:inline-block mr-1">
+                      Sort by:
+                    </span>
+                    <span className="font-medium">
+                      {sortOption.replace("-", " ")}
+                    </span>
+                    <ChevronDown className="ml-1 h-3.5 w-3.5" />
                   </Button>
                 </DropdownMenuTrigger>
-                <DropdownMenuContent align="end">
+                <DropdownMenuContent align="end" className="w-48">
                   {[
                     { value: "recommended", label: "Recommended" },
                     { value: "price-low", label: "Price: Low to High" },
@@ -617,7 +735,7 @@ export function HostelsList({
             universities={universities}
             filters={currentFilters}
             onFilterChange={handleFilterChange} // This updates state
-            // applyFilters={applyAllFilters} // This is the function to call when "Apply Filters" is clicked
+            applyFilters={applyAllFilters} // This is the function to call when "Apply Filters" is clicked
             className="hidden md:block" // Hide on mobile, show on md+
           />
 

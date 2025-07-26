@@ -25,7 +25,7 @@ import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle }
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar"
 import { Badge } from "@/components/ui/badge"
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
-import { useAuth } from "@/components/auth/auth-provider"
+import { signOut } from "next-auth/react"
 import { formatDistanceToNow } from "date-fns"
 
 interface Hostel {
@@ -75,14 +75,13 @@ export function UserDashboard({
   unreadCount,
 }: UserDashboardProps) {
   const router = useRouter()
-  const { signOut } = useAuth()
 
   return (
     <div className="min-h-screen bg-muted/40">
       <header className="bg-background border-b sticky top-0 z-10">
         <div className="container mx-auto px-4 py-3 flex items-center justify-between">
           <Link href="/" className="font-bold text-xl">
-            Hallynk
+            <Image src="/logo.svg" alt="Hallynk" width={100} height={100} className="w-14 h-14" />
           </Link>
 
           <div className="flex items-center gap-4">

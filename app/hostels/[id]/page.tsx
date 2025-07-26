@@ -1,31 +1,48 @@
 import { createClient } from "@/lib/supabase/server"
 import { notFound } from "next/navigation"
 import { HostelDetails } from "@/components/hostel-details"
+import prisma from "@/lib/prisma"
 
 export default async function HostelDetailPage({ params }: { params: Promise<{ id: string }> }) {
-  const supabase = await createClient()
+
   const hostelId = (await params).id
 
-  // Fetch the hostel details
-  const { data: hostel, error } = await supabase
-    .from("hostels")
-    .select(`
-      *,
-      rooms(*),
-      hostel_images(id, url, is_primary),
-      reviews(id, user_id, rating, comment, helpful_count, created_at, users:user_id(first_name, last_name, email, university)),
-      owner:owner_id(id, email, first_name, last_name, phone)
-    `)
-    .eq("id", hostelId)
-    .single()
-
-  if (error || !hostel) {
-    console.error("Error fetching hostel:", error)
+  if (!hostelId) {
     notFound()
   }
 
-  // Get the university name
-  const { data: university } = await supabase.from("universities").select("name").eq("id", hostel.university).single()
+  const hostel = await prisma.hostels.findUnique({
+    where: {
+      id: hostelId,
+    },
+    include: {
+      rooms: true,
+      images: true,
+      reviews: true,
+      owner: true,
+    },
+  })
+
+  console.log(hostel, 'hostel')
+
+  if (!hostel) {
+    console.log("Hostel not found")
+    notFound()
+  }
+
+  const university = await prisma.university.findUnique({
+    where: {
+      id: hostel.university,
+    },
+  })
+
+  console.log(university, 'university')
+  
+
+  // if (!university) {
+  //   console.log("University not found")
+  //   notFound()
+  // }
 
   // Calculate average rating
   const totalRatings = hostel.reviews.length
@@ -40,31 +57,11 @@ export default async function HostelDetailPage({ params }: { params: Promise<{ i
   })
 
   // Sort images to put primary first
-  const sortedImages = [...hostel.hostel_images].sort((a, b) => {
+  const sortedImages = [...hostel.images].sort((a, b) => {
     if (a.is_primary) return -1
     if (b.is_primary) return 1
     return 0
   })
-
-  // Track the view if user is authenticated
-  const {
-    data: { session },
-  } = await supabase?.auth?.getSession()
-
-  if (session) {
-    // Record the view in hostel_views table
-    await supabase.from("hostel_views").upsert(
-      {
-        user_id: session.user.id,
-        hostel_id: hostelId,
-        viewed_at: new Date().toISOString(),
-      },
-      {
-        onConflict: "user_id, hostel_id",
-        ignoreDuplicates: false,
-      },
-    )
-  }
 
   // Format the hostel data for the component
   const hostelData = {
@@ -78,3 +75,4 @@ export default async function HostelDetailPage({ params }: { params: Promise<{ i
 
   return <HostelDetails hostel={hostelData} />
 }
+

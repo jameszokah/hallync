@@ -1,0 +1,219 @@
+// This is your Prisma schema file,
+// learn more about it in the docs: https://pris.ly/d/prisma-schema
+
+// Looking for ways to speed up your queries, or scale easily with your serverless or edge functions?
+// Try Prisma Accelerate: https://pris.ly/cli/accelerate-init
+
+generator client {
+  provider = "prisma-client-js"
+  output   = "../app/generated/prisma"
+  previewFeatures = ["driverAdapters"]
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+model User {
+  id        String   @id @default(uuid()) 
+  name String?
+  first_name String?
+  last_name String?
+  email     String   @unique
+  password  String?
+  phone     String?
+  address   String?
+  image String?
+  emailVerified DateTime?
+  is_verified Boolean @default(false)
+  is_active Boolean @default(true)
+  role      UserRole   @default(STUDENT)
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+  deletedAt DateTime?
+  hostels Hostels[]
+  bookings Booking[]
+  saved_hostels SavedHostels[]
+  accounts Account[]
+  sessions Session[]
+}
+
+ 
+model Account {
+  userId            String   @map("user_id")
+  type              String
+  provider          String
+  providerAccountId String @map("provider_account_id")
+  refresh_token     String?
+  access_token      String?
+  expires_at        Int?
+  token_type        String?
+  scope             String?
+  id_token          String?
+  session_state     String?
+ 
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+ 
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+ 
+  @@id([provider, providerAccountId])
+}
+ 
+model Session {
+  sessionToken String   @unique
+  userId       String   @map("user_id")
+  expires      DateTime
+  user         User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+ 
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+}
+ 
+model VerificationToken {
+identifier String
+  token      String
+  expires    DateTime
+ 
+  @@id([identifier, token])
+}
+
+
+model Hostels {
+  id        String   @id @default(uuid()) 
+  name      String
+  description String
+  university String
+  location String
+  owner_id String
+  verified Boolean @default(false)
+  featured Boolean @default(false)
+  distance_to_campus String?
+  amenities Json? 
+  owner User @relation(fields: [owner_id], references: [id])
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+  deletedAt DateTime?
+  images HostelImages[]
+  rooms Room[]
+  reviews HostelReviews[]
+  saved_hostels SavedHostels[]
+  bookings Booking[]
+}
+
+
+model HostelImages {
+  id        String   @id @default(uuid()) 
+  hostel_id String   
+  url String
+  is_primary Boolean @default(false)
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+  deletedAt DateTime?
+  hostel Hostels @relation(fields: [hostel_id], references: [id])
+}
+
+model HostelReviews {
+  id        String   @id @default(uuid()) 
+  hostel_id String
+  user_id String
+  rating Int
+  comment String?
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+  deletedAt DateTime?
+  hostel Hostels @relation(fields: [hostel_id], references: [id])
+}
+
+model Room {
+  id        String   @id @default(uuid()) 
+  hostel_id String
+  type String
+  description String?
+  price Int
+  capacity Int    
+  available Boolean @default(true)
+  images RoomImages[]
+  hostel Hostels @relation(fields: [hostel_id], references: [id])
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+  deletedAt DateTime?
+  bookings Booking[]
+}
+
+model RoomImages {
+  id        String   @id @default(uuid()) 
+  room_id String
+  url String
+  room Room @relation(fields: [room_id], references: [id])
+  is_primary Boolean @default(false)
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+  deletedAt DateTime?
+}
+
+
+model University {
+  id        String   @id @default(uuid()) 
+  name      String
+  location String
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+  deletedAt DateTime?
+}
+
+model Booking {
+  id        String   @id @default(uuid()) 
+  user_id String
+  room_id String
+  hostel_id String
+  check_in_date DateTime
+  check_out_date DateTime
+  status BookingStatus @default(PENDING)
+  payment_status PaymentStatus @default(PENDING)
+  payment_method PaymentMethod @default(MOBILE_MONEY)
+  amount Int
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+  deletedAt DateTime?
+  user User @relation(fields: [user_id], references: [id])
+  room Room @relation(fields: [room_id], references: [id])
+  hostel Hostels @relation(fields: [hostel_id], references: [id])
+}
+
+model SavedHostels {
+  id        String   @id @default(uuid()) 
+  user_id String
+  hostel_id String
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+  deletedAt DateTime?
+  user User @relation(fields: [user_id], references: [id])
+  hostel Hostels @relation(fields: [hostel_id], references: [id])
+}
+
+
+enum UserRole {
+  ADMIN
+  STUDENT
+  OWNER
+}
+
+enum PaymentStatus {
+  PENDING
+  PARTIAL
+  COMPLETED
+}
+
+enum BookingStatus {
+  PENDING
+  CONFIRMED
+}
+
+enum PaymentMethod {  
+  MOBILE_MONEY
+  BANK_TRANSFER
+  CARD
+}
+

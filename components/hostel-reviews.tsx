@@ -4,64 +4,64 @@ import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar"
 import { Progress } from "@/components/ui/progress"
 import { Button } from "@/components/ui/button"
 
-export function HostelReviews({ hostelId }: { hostelId: string }) {
+export function HostelReviews({ hostelId, reviews, ratingStats }: { hostelId: string, reviews: any[], ratingStats: any }) {
   // This would normally come from an API call using the hostelId
-  const reviews = [
-    {
-      id: 1,
-      user: {
-        name: "Kofi Mensah",
-        image: "/placeholder.svg?height=100&width=100",
-        university: "University of Ghana",
-        program: "Computer Science",
-      },
-      rating: 5,
-      date: "August 2024",
-      comment:
-        "I stayed at this hostel for two semesters and had a great experience. The location is perfect, just a short walk to campus. The WiFi is reliable and the security is excellent. The management is responsive and addresses issues promptly.",
-      helpful: 12,
-    },
-    {
-      id: 2,
-      user: {
-        name: "Ama Darko",
-        image: "/placeholder.svg?height=100&width=100",
-        university: "University of Ghana",
-        program: "Business Administration",
-      },
-      rating: 4,
-      date: "July 2024",
-      comment:
-        "The hostel is clean and well-maintained. The only issue I had was with water supply occasionally, but it was usually resolved within a few hours. The study room is a great place to prepare for exams away from distractions.",
-      helpful: 8,
-    },
-    {
-      id: 3,
-      user: {
-        name: "Emmanuel Owusu",
-        image: "/placeholder.svg?height=100&width=100",
-        university: "University of Ghana",
-        program: "Engineering",
-      },
-      rating: 5,
-      date: "June 2024",
-      comment:
-        "Best hostel near UG! The backup generator was a lifesaver during power outages, and the security team is vigilant. The rooms are spacious and well-ventilated. Highly recommend for any student looking for quality accommodation.",
-      helpful: 15,
-    },
-  ]
+  // const reviews = [
+  //   {
+  //     id: 1,
+  //     user: {
+  //       name: "Kofi Mensah",
+  //       image: "/placeholder.svg?height=100&width=100",
+  //       university: "University of Ghana",
+  //       program: "Computer Science",
+  //     },
+  //     rating: 5,
+  //     date: "August 2024",
+  //     comment:
+  //       "I stayed at this hostel for two semesters and had a great experience. The location is perfect, just a short walk to campus. The WiFi is reliable and the security is excellent. The management is responsive and addresses issues promptly.",
+  //     helpful: 12,
+  //   },
+  //   {
+  //     id: 2,
+  //     user: {
+  //       name: "Ama Darko",
+  //       image: "/placeholder.svg?height=100&width=100",
+  //       university: "University of Ghana",
+  //       program: "Business Administration",
+  //     },
+  //     rating: 4,
+  //     date: "July 2024",
+  //     comment:
+  //       "The hostel is clean and well-maintained. The only issue I had was with water supply occasionally, but it was usually resolved within a few hours. The study room is a great place to prepare for exams away from distractions.",
+  //     helpful: 8,
+  //   },
+  //   {
+  //     id: 3,
+  //     user: {
+  //       name: "Emmanuel Owusu",
+  //       image: "/placeholder.svg?height=100&width=100",
+  //       university: "University of Ghana",
+  //       program: "Engineering",
+  //     },
+  //     rating: 5,
+  //     date: "June 2024",
+  //     comment:
+  //       "Best hostel near UG! The backup generator was a lifesaver during power outages, and the security team is vigilant. The rooms are spacious and well-ventilated. Highly recommend for any student looking for quality accommodation.",
+  //     helpful: 15,
+  //   },
+  // ]
 
-  const ratingStats = {
-    average: 4.7,
-    total: 124,
-    distribution: [
-      { stars: 5, percentage: 80, count: 99 },
-      { stars: 4, percentage: 15, count: 19 },
-      { stars: 3, percentage: 3, count: 4 },
-      { stars: 2, percentage: 1, count: 1 },
-      { stars: 1, percentage: 1, count: 1 },
-    ],
-  }
+  // const ratingStats = {
+  //   average: 4.7,
+  //   total: 124,
+  //   distribution: [
+  //     { stars: 5, percentage: 80, count: 99 },
+  //     { stars: 4, percentage: 15, count: 19 },
+  //     { stars: 3, percentage: 3, count: 4 },
+  //     { stars: 2, percentage: 1, count: 1 },
+  //     { stars: 1, percentage: 1, count: 1 },
+  //   ],
+  // }
 
   return (
     <div className="space-y-6">
@@ -84,7 +84,7 @@ export function HostelReviews({ hostelId }: { hostelId: string }) {
 
           <div className="md:w-2/3">
             <div className="space-y-2">
-              {ratingStats.distribution.map((item) => (
+              {ratingStats.distribution.map((item: any) => (
                 <div key={item.stars} className="flex items-center gap-2">
                   <div className="w-12 text-sm">{item.stars} stars</div>
                   <Progress value={item.percentage} className="h-2" />
@@ -105,7 +105,7 @@ export function HostelReviews({ hostelId }: { hostelId: string }) {
                 <AvatarFallback>
                   {review.user.name
                     .split(" ")
-                    .map((n) => n[0])
+                    .map((n: string) => n[0])
                     .join("")}
                 </AvatarFallback>
               </Avatar>

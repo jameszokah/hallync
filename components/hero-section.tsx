@@ -17,6 +17,7 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
+import { useSession } from "next-auth/react";
 
 interface University {
   id: string;
@@ -32,7 +33,7 @@ export function HeroSection({ universities }: HeroSectionProps) {
   const router = useRouter();
   const [university, setUniversity] = useState("");
   const [location, setLocation] = useState("");
-
+  const { data: session } = useSession();
   const handleSearch = (e: React.FormEvent) => {
     e.preventDefault();
 
@@ -56,11 +57,19 @@ export function HeroSection({ universities }: HeroSectionProps) {
       </div>
       <div className="container relative z-10 mx-auto px-4 py-16 md:py-24">
         <div className="absolute top-4 right-4 z-20">
+          {session?.user ? (
+            <Link href={session?.user?.role === "OWNER" ? `/owner/dashboard` : `/dashboard`}>
+              <Button variant="secondary" className="text-sm">
+                {session?.user?.role === "OWNER" ? "Owner Dashboard" : "Student Dashboard"}
+              </Button>
+            </Link>
+          ) : (
           <Link href="/auth/login">
             <Button variant="secondary" className="text-sm">
               Login / Register
             </Button>
           </Link>
+          )}
         </div>
         <div className="max-w-3xl mx-auto text-center mb-8 pt-12 md:pt-0">
           <h1 className="text-4xl font-bold tracking-tight sm:text-5xl md:text-6xl mb-4">

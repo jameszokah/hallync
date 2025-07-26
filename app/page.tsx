@@ -1,55 +1,57 @@
-import { createClient } from "@/lib/supabase/server"
-import Link from "next/link"
-import Image from "next/image"
-import { HeroSection } from "@/components/hero-section"
-import { FeaturedHostels } from "@/components/featured-hostels"
-import { HowItWorks } from "@/components/how-it-works"
-import { Testimonials } from "@/components/testimonials"
-import { UniversityPartners } from "@/components/university-partners"
-import { Footer } from "@/components/footer"
+import { createClient } from "@/lib/supabase/server";
+import Link from "next/link";
+import Image from "next/image";
+import { HeroSection } from "@/components/hero-section";
+import { FeaturedHostels, IHostel } from "@/components/featured-hostels";
+import { HowItWorks } from "@/components/how-it-works";
+import { Testimonials } from "@/components/testimonials";
+import { UniversityPartners } from "@/components/university-partners";
+import { Footer } from "@/components/footer";
+import prisma from "@/lib/prisma";
+import { Hostels, University } from "./generated/prisma";
 
 // Mock data to use when tables don't exist
-const MOCK_HOSTELS = [
-  {
-    id: "1",
-    name: "Legon Hall Annex",
-    location: "East Legon, Accra",
-    university: "University of Ghana",
-    verified: true,
-    image: "/placeholder.svg?height=300&width=400&text=Legon+Hall+Annex",
-    rating: 4.5,
-    reviews: 32,
-    price: 3500,
-    priceUnit: "semester",
-    amenities: ["WiFi", "Security", "Water", "Electricity"],
-  },
-  {
-    id: "2",
-    name: "Unity Hall",
-    location: "Ayeduase, Kumasi",
-    university: "Kwame Nkrumah University",
-    verified: true,
-    image: "/placeholder.svg?height=300&width=400&text=Unity+Hall",
-    rating: 4.2,
-    reviews: 28,
-    price: 2800,
-    priceUnit: "semester",
-    amenities: ["WiFi", "Security", "Water"],
-  },
-  {
-    id: "3",
-    name: "Atlantic Hostel",
-    location: "Cape Coast",
-    university: "University of Cape Coast",
-    verified: true,
-    image: "/placeholder.svg?height=300&width=400&text=Atlantic+Hostel",
-    rating: 4.0,
-    reviews: 15,
-    price: 2500,
-    priceUnit: "semester",
-    amenities: ["WiFi", "Security"],
-  },
-]
+// const MOCK_HOSTELS = [
+//   {
+//     id: "1",
+//     name: "Legon Hall Annex",
+//     location: "East Legon, Accra",
+//     university: "University of Ghana",
+//     verified: true,
+//     image: "/placeholder.svg?height=300&width=400&text=Legon+Hall+Annex",
+//     rating: 4.5,
+//     reviews: 32,
+//     price: 3500,
+//     priceUnit: "semester",
+//     amenities: ["WiFi", "Security", "Water", "Electricity"],
+//   },
+//   {
+//     id: "2",
+//     name: "Unity Hall",
+//     location: "Ayeduase, Kumasi",
+//     university: "Kwame Nkrumah University",
+//     verified: true,
+//     image: "/placeholder.svg?height=300&width=400&text=Unity+Hall",
+//     rating: 4.2,
+//     reviews: 28,
+//     price: 2800,
+//     priceUnit: "semester",
+//     amenities: ["WiFi", "Security", "Water"],
+//   },
+//   {
+//     id: "3",
+//     name: "Atlantic Hostel",
+//     location: "Cape Coast",
+//     university: "University of Cape Coast",
+//     verified: true,
+//     image: "/placeholder.svg?height=300&width=400&text=Atlantic+Hostel",
+//     rating: 4.0,
+//     reviews: 15,
+//     price: 2500,
+//     priceUnit: "semester",
+//     amenities: ["WiFi", "Security"],
+//   },
+// ];
 
 const MOCK_UNIVERSITIES = [
   {
@@ -70,80 +72,62 @@ const MOCK_UNIVERSITIES = [
     location: "Cape Coast",
     image: "/ucc.jpg",
   },
-]
+];
 
 export default async function Home() {
-  const supabase = await createClient()
-
-  let featuredHostels = []
-  let universities = []
+  let featuredHostels: IHostel[] = [];
+  let universities: University[] = [];
 
   try {
     // Check if the hostels table exists by attempting to query it
-    const { data: hostelsData, error: hostelsError } = await supabase.from("hostels").select("id").limit(1)
+    const hostels = await prisma.hostels.findMany({
+      where: {
+        verified: true,
+        featured: true,
+      },
+      include: {
+        images: true,
+      },
+      take: 3,
+    });
 
-    if (hostelsError) {
-      console.error("Error fetching featured hostels:", hostelsError)
-      // If the table doesn't exist, use mock data
-      featuredHostels = MOCK_HOSTELS
-    } else {
-      // If the table exists, fetch the real data
-      const { data, error } = await supabase
-        .from("hostels")
-        .select(`
-          id, 
-          name, 
-          location, 
-          university,
-          verified
-        `)
-        .eq("verified", true)
-        .limit(3)
+    // If the table exists, fetch the real data
 
-      if (error) {
-        console.error("Error fetching featured hostels:", error)
-        featuredHostels = MOCK_HOSTELS
-      } else {
-        // Process the real hostel data
-        featuredHostels = data.map((hostel) => ({
-          id: hostel.id,
-          name: hostel.name,
-          location: hostel.location,
-          university: hostel.university,
-          verified: hostel.verified,
-          image: `/placeholder.svg?height=300&width=400&text=${encodeURIComponent(hostel.name)}`,
-          rating: (Math.random() * 2 + 3).toFixed(1), // Random rating between 3 and 5
-          reviews: Math.floor(Math.random() * 30) + 5, // Random number of reviews
-          price: Math.floor(Math.random() * 3000) + 2000, // Random price
-          priceUnit: "semester",
-          amenities: ["WiFi", "Security", "Water", "Electricity"].slice(0, Math.floor(Math.random() * 4) + 1),
-        }))
-      }
-    }
+    // Process the real hostel data
+    featuredHostels = hostels.map((hostel) => ({
+      ...hostel, // Include all the base Hostels fields
+      id: hostel.id,
+      name: hostel.name,
+      location: hostel.location,
+      university: hostel.university,
+      verified: hostel.verified,
+      image: hostel.images[0]?.url || "/placeholder.svg",
+      rating: Number((Math.random() * 2 + 3).toFixed(1)), // Random rating between 3 and 5
+      reviews: Math.floor(Math.random() * 30) + 5, // Random number of reviews
+      price: Math.floor(Math.random() * 3000) + 2000, // Random price
+      priceUnit: "semester",
+      amenities: ["WiFi", "Security", "Water", "Electricity"].slice(
+        0,
+        Math.floor(Math.random() * 4) + 1
+      ),
+    }));
 
     // Check if the universities table exists
-    const { data: uniData, error: uniError } = await supabase.from("universities").select("id").limit(1)
+    universities = await prisma.university.findMany({
+      take: 3,
+    });
 
-    if (uniError) {
-      console.error("Error fetching universities:", uniError)
-      // If the table doesn't exist, use mock data
-      universities = MOCK_UNIVERSITIES
-    } else {
-      // If the table exists, fetch the real data
-      const { data, error } = await supabase.from("universities").select("id, name, location").limit(3)
-
-      if (error) {
-        console.error("Error fetching universities:", error)
-        universities = MOCK_UNIVERSITIES
-      } else {
-        universities = data
-      }
-    }
+    // // If the table exists, fetch the real data
+    //   universities = universities.map((university) => ({
+    //   id: university.id,
+    //   name: university.name,
+    //   location: university.location,
+    // }))
   } catch (error) {
-    console.error("Unexpected error:", error)
+    console.error("Unexpected error:", error);
     // Fallback to mock data in case of any unexpected errors
-    featuredHostels = MOCK_HOSTELS
-    universities = MOCK_UNIVERSITIES
+    // featuredHostels = MOCK_HOSTELS
+    // universities = MOCK_UNIVERSITIES
   }
 
   return (
@@ -180,9 +164,10 @@ export default async function Home() {
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
             {MOCK_UNIVERSITIES.map((university) => (
               <Link
-                href={`/hostels?university=${encodeURIComponent(
-                  university.id
-                )}`}
+                // href={`/hostels?university=${encodeURIComponent(
+                //   university.id
+                // )}`}
+                href={'#'}
                 key={university.id}
                 className="bg-background rounded-lg overflow-hidden shadow-md hover:shadow-lg transition-shadow"
               >

@@ -1,28 +1,35 @@
-import { createClient } from "@/lib/supabase/server"
-import { redirect } from "next/navigation"
-import { NewHostelForm } from "@/components/owner/new-hostel-form"
+import { auth } from "@/auth";
+import { redirect } from "next/navigation";
+import prisma from "@/lib/prisma";
+import { NewHostelForm } from "@/components/owner/new-hostel-form";
+import { Metadata } from "next";
+
+export const metadata: Metadata = {
+  title: "Add New Hostel - Hallynk",
+  description: "Create a new student hostel listing on Hallynk platform",
+};
 
 export default async function NewHostelPage() {
-  const supabase = await createClient()
+  const session = await auth();
 
-  // Get the current user
-  const {
-    data: { session },
-  } = await supabase?.auth?.getSession()
-
-  if (!session) {
-    redirect("/auth/login")
+  if (!session?.user) {
+    redirect("/auth/login");
   }
 
-  // Check if the user is a hostel owner
-  const { data: user, error } = await supabase.from("users").select("role").eq("id", session.user.id).single()
-
-  if (error || user.role !== "owner") {
-    redirect("/")
+  if (session.user.role !== "OWNER") {
+    redirect("/");
   }
 
   // Fetch universities for the dropdown
-  const { data: universities } = await supabase.from("universities").select("id, name").order("name")
+  const universities = await prisma.university.findMany({
+    where: { deletedAt: null },
+    select: { id: true, name: true },
+    orderBy: { name: "asc" },
+  });
 
-  return <NewHostelForm universities={universities || []} userId={session.user.id} />
+  return (
+    <div className="container mx-auto px-4 py-8">
+      <NewHostelForm universities={universities} userId={session.user.id} />
+    </div>
+  );
 }

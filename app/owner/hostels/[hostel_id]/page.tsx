@@ -11,11 +11,11 @@ export const dynamic = "force-dynamic";
 export async function generateMetadata({
   params,
 }: {
-  params: { hostel_id: string };
+  params: Promise<{ hostel_id: string }>;
 }): Promise<Metadata> {
   const hostel = await prisma.hostels.findUnique({
     where: {
-      id: params.hostel_id,
+      id: (await params).hostel_id,
       deletedAt: null,
     },
     select: {
@@ -38,7 +38,7 @@ export async function generateMetadata({
 export default async function HostelPage({
   params,
 }: {
-  params: { hostel_id: string };
+  params: Promise<{ hostel_id: string }>;
 }) {
   const session = await auth();
 
@@ -53,7 +53,7 @@ export default async function HostelPage({
   // Fetch the hostel details with rooms and images
   const hostel = await prisma.hostels.findUnique({
     where: {
-      id: params.hostel_id,
+      id: (await params).hostel_id,
       owner_id: session.user.id,
       deletedAt: null,
     },

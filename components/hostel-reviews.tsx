@@ -1,10 +1,18 @@
-import { Star } from "lucide-react"
+import { Star } from "lucide-react";
 
-import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar"
-import { Progress } from "@/components/ui/progress"
-import { Button } from "@/components/ui/button"
+import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
+import { Progress } from "@/components/ui/progress";
+import { Button } from "@/components/ui/button";
 
-export function HostelReviews({ hostelId, reviews, ratingStats }: { hostelId: string, reviews: any[], ratingStats: any }) {
+export function HostelReviews({
+  hostelId,
+  reviews,
+  ratingStats,
+}: {
+  hostelId: string;
+  reviews: any[];
+  ratingStats: any;
+}) {
   // This would normally come from an API call using the hostelId
   // const reviews = [
   //   {
@@ -66,31 +74,35 @@ export function HostelReviews({ hostelId, reviews, ratingStats }: { hostelId: st
   return (
     <div className="space-y-6">
       <div className="bg-background border rounded-lg p-6">
-        <div className="flex flex-col md:flex-row gap-6">
-          <div className="md:w-1/3">
-            <div className="text-center md:text-left">
-              <div className="text-5xl font-bold">{ratingStats.average}</div>
-              <div className="flex justify-center md:justify-start mt-2">
-                {[...Array(5)].map((_, i) => (
-                  <Star
-                    key={i}
-                    className={`h-5 w-5 ${i < Math.floor(ratingStats.average) ? "fill-yellow-400 text-yellow-400" : "fill-muted text-muted"}`}
-                  />
-                ))}
-              </div>
-              <div className="text-muted-foreground mt-1">{ratingStats.total} reviews</div>
-            </div>
-          </div>
-
+        <div className="flex flex-col-reverse md:flex-row gap-8">
           <div className="md:w-2/3">
             <div className="space-y-2">
-              {ratingStats.distribution.map((item: any) => (
-                <div key={item.stars} className="flex items-center gap-2">
-                  <div className="w-12 text-sm">{item.stars} stars</div>
-                  <Progress value={item.percentage} className="h-2" />
-                  <div className="w-12 text-sm text-right">{item.count}</div>
-                </div>
+              {Object.entries(ratingStats.distribution)
+                .sort(([a], [b]) => Number(b) - Number(a))
+                .map(([stars, percentage]) => (
+                  <div key={stars} className="flex items-center gap-2">
+                    <div className="w-12 text-sm">{stars} stars</div>
+                    <Progress value={percentage as number} className="h-2" />
+                  </div>
+                ))}
+            </div>
+          </div>
+          <div className="md:w-1/3 text-center">
+            <div className="text-4xl font-bold">{ratingStats.average}</div>
+            <div className="flex justify-center md:justify-start mt-2">
+              {[...Array(5)].map((_, i) => (
+                <Star
+                  key={i}
+                  className={`h-5 w-5 ${
+                    i < Math.floor(ratingStats.average)
+                      ? "fill-yellow-400 text-yellow-400"
+                      : "fill-muted text-muted"
+                  }`}
+                />
               ))}
+            </div>
+            <div className="text-muted-foreground mt-1">
+              {ratingStats.total} reviews
             </div>
           </div>
         </div>
@@ -101,7 +113,10 @@ export function HostelReviews({ hostelId, reviews, ratingStats }: { hostelId: st
           <div key={review.id} className="border rounded-lg p-6">
             <div className="flex items-start gap-4">
               <Avatar className="h-12 w-12">
-                <AvatarImage src={review.user.image || "/placeholder.svg"} alt={review.user.name} />
+                <AvatarImage
+                  src={review.user.image || "/placeholder.svg"}
+                  alt={review.user.name}
+                />
                 <AvatarFallback>
                   {review.user.name
                     .split(" ")
@@ -117,14 +132,20 @@ export function HostelReviews({ hostelId, reviews, ratingStats }: { hostelId: st
                       {review.user.university} • {review.user.program}
                     </p>
                   </div>
-                  <div className="mt-1 sm:mt-0 text-sm text-muted-foreground">{review.date}</div>
+                  <div className="mt-1 sm:mt-0 text-sm text-muted-foreground">
+                    {review.date}
+                  </div>
                 </div>
 
                 <div className="flex mt-2">
                   {[...Array(5)].map((_, i) => (
                     <Star
                       key={i}
-                      className={`h-4 w-4 ${i < review.rating ? "fill-yellow-400 text-yellow-400" : "fill-muted text-muted"}`}
+                      className={`h-4 w-4 ${
+                        i < review.rating
+                          ? "fill-yellow-400 text-yellow-400"
+                          : "fill-muted text-muted"
+                      }`}
                     />
                   ))}
                 </div>
@@ -132,7 +153,11 @@ export function HostelReviews({ hostelId, reviews, ratingStats }: { hostelId: st
                 <p className="mt-3">{review.comment}</p>
 
                 <div className="mt-4 flex items-center">
-                  <Button variant="ghost" size="sm" className="text-muted-foreground">
+                  <Button
+                    variant="ghost"
+                    size="sm"
+                    className="text-muted-foreground"
+                  >
                     Helpful ({review.helpful})
                   </Button>
                 </div>
@@ -146,5 +171,5 @@ export function HostelReviews({ hostelId, reviews, ratingStats }: { hostelId: st
         Load More Reviews
       </Button>
     </div>
-  )
+  );
 }

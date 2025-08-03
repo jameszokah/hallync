@@ -1,8 +1,9 @@
-import type { NextAuthConfig } from "next-auth";
+import type { NextAuthConfig, User } from "next-auth";
 import { getUserByEmail } from "./lib/actions/auth";
 import GoogleProvider from "next-auth/providers/google";
 import CredentialsProvider from "next-auth/providers/credentials";
 import bcrypt from "bcryptjs";
+
 
 // Notice this is only an object, not a full Auth.js instance
 export default {
@@ -31,7 +32,7 @@ export default {
         }
         console.log(user, 'user')
         console.log(credentials, 'credentials')
-        return user;
+        return user as User;
       },
     }),
     GoogleProvider({

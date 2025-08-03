@@ -28,6 +28,7 @@ type Booking = {
     type: string;
   };
   check_in_date: string;
+  check_out_date: string;
   status: "PENDING" | "CONFIRMED";
   payment_status: "PENDING" | "PARTIAL" | "COMPLETED";
   amount: number;
@@ -76,6 +77,7 @@ export function OwnerBookingList({ bookings }: { bookings: Booking[] }) {
                   <TableHead>Hostel</TableHead>
                   <TableHead>Room</TableHead>
                   <TableHead>Check-in</TableHead>
+                  <TableHead>Check-out</TableHead>
                   <TableHead>Booking Status</TableHead>
                   <TableHead>Payment Status</TableHead>
                   <TableHead className="text-right">Amount</TableHead>
@@ -104,6 +106,9 @@ export function OwnerBookingList({ bookings }: { bookings: Booking[] }) {
                     <TableCell>{booking.room.type}</TableCell>
                     <TableCell>
                       {new Date(booking.check_in_date).toLocaleDateString()}
+                    </TableCell>
+                    <TableCell>
+                      {new Date(booking.check_out_date).toLocaleDateString()}
                     </TableCell>
                     <TableCell>
                       <Badge

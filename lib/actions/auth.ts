@@ -1,5 +1,5 @@
 "use server";
-import { signIn } from "@/auth";
+import { signIn, signOut } from "@/auth";
 import prisma from "../prisma";
 import { UserRole } from "@/app/generated/prisma";
 import bcrypt from "bcryptjs";
@@ -107,6 +107,11 @@ export async function signInAction(
     return { success: false, error: error.message || "Invalid credentials" };
   }
 }
+
+export async function signOutAction() {
+  await signOut({ redirectTo: "/auth/login" });
+}
+
 
 export async function getUser(id: string | undefined) {
   if (!id) {

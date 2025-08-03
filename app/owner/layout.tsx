@@ -18,6 +18,7 @@ import {
 import { Button } from "@/components/ui/button";
 import { Avatar, AvatarImage, AvatarFallback } from "@/components/ui/avatar";
 import { Sheet, SheetContent, SheetTrigger } from "@/components/ui/sheet";
+import { signOutAction } from "@/lib/actions/auth";
 
 export default async function OwnerLayout({
   children,
@@ -65,18 +66,16 @@ export default async function OwnerLayout({
     },
   ];
 
-  const initials = session.user.name 
-    ? `${session.user.name.charAt(0)}` 
-    : session.user.first_name && session.user.last_name 
-      ? `${session.user.first_name.charAt(0)}${session.user.last_name.charAt(0)}` 
-      : session.user.email?.charAt(0) || "U";
+  const initials = session.user.name
+    ? `${session.user.name.charAt(0)}`
+    : session.user.first_name && session.user.last_name
+    ? `${session.user.first_name.charAt(0)}${session.user.last_name.charAt(0)}`
+    : session.user.email?.charAt(0) || "U";
 
   return (
     <div className="min-h-screen bg-muted/30">
-      <Toaster position="top-center" />
-      
       {/* Header - Mobile and Desktop */}
-      <header className="bg-white border-b sticky top-0 z-40">
+      <header className="border-b sticky top-0 z-40 bg-background">
         <div className="container mx-auto px-4 py-3 flex items-center justify-between">
           <div className="flex items-center gap-3">
             <Sheet>
@@ -85,34 +84,75 @@ export default async function OwnerLayout({
                   <Menu className="h-5 w-5" />
                 </Button>
               </SheetTrigger>
-              <SheetContent side="left" className="w-64">
-                <Link href="/" className="flex items-center gap-2 mt-6 mb-8 px-2">
+              <SheetContent side="left" className="w-64 flex flex-col justify-between">
+                <Link
+                  href="/"
+                  className="flex items-center gap-2 mt-6 mb-8 px-2"
+                >
                   <div className="font-bold text-xl">
-                    <Image src="/logo.svg" alt="Hallynk" width={100} height={100} className="w-14 h-14" />
+                    <Image
+                      src="/logo.svg"
+                      alt="Hallynk"
+                      width={100}
+                      height={100}
+                      className="w-14 h-14"
+                    />
                   </div>
                 </Link>
                 <div className="flex flex-col gap-6 px-2">
-                  {navigation.map((item) => (
-                    <Link
-                      key={item.name}
-                      href={item.href}
-                      className="flex items-center gap-3 text-sm font-medium"
-                    >
-                      <item.icon className="h-5 w-5" />
-                      {item.name}
-                    </Link>
-                  ))}
+                  {navigation.map((item) => {
+                    if (item.disabled) {
+                      return (
+                        <div
+                          key={item.name}
+                          className="flex items-center gap-3 text-sm font-medium text-muted-foreground/60 cursor-not-allowed"
+                        >
+                          <item.icon
+                            className={`h-5 w-5 text-muted-foreground`}
+                          />
+                          <span>{item.name} (Coming Soon)</span>
+                        </div>
+                      );
+                    }
+                    return (
+                      <Link
+                        key={item.name}
+                        href={item.href}
+                        className="flex items-center gap-3 text-sm font-medium"
+                      >
+                        <item.icon className="h-5 w-5" />
+                        {item.name}
+                      </Link>
+                    );
+                  })}
                 </div>
+
+                <form action={signOutAction} className="mt-auto">
+                  <Button
+                    variant="ghost"
+                    className="w-full justify-start text-muted-foreground hover:text-foreground"
+                    type="submit"
+                  >
+                    <LogOut className="h-5 w-5 mr-3" />
+                    Sign out
+                  </Button>
+                </form>
               </SheetContent>
             </Sheet>
-            
-            <Link href="/" className="font-bold text-xl flex items-center gap-2">
+
+            <Link
+              href="/"
+              className="font-bold text-xl flex items-center gap-2"
+            >
               Hallynk
             </Link>
           </div>
 
           <div className="flex items-center gap-4">
-            <Link href="/" className="text-sm font-medium text-muted-foreground hidden md:block">
+            <Link
+              href="/"
+              className="text-sm font-medium text-muted-foreground hidden md:block"
+            >
               View Main Site
             </Link>
             <Avatar className="h-8 w-8">
@@ -120,18 +160,16 @@ export default async function OwnerLayout({
                 src={session.user.image || ""}
                 alt={session.user.name || "User"}
               />
-              <AvatarFallback>
-                {initials}
-              </AvatarFallback>
+              <AvatarFallback>{initials}</AvatarFallback>
             </Avatar>
           </div>
         </div>
       </header>
 
-      <div className="flex">
+      <div className="flex bg-background">
         {/* Sidebar - Desktop */}
-        <aside className="hidden lg:flex w-64 flex-col fixed inset-y-0 pt-16 bg-white border-r">
-          <div className="flex flex-col flex-grow px-4 py-6">
+        <aside className="hidden lg:flex w-64 flex-col fixed inset-y-0 pt-16 bg-background border-r">
+          <div className="flex flex-col flex-grow px-4 py-6 bg-background">
             <div className="mb-6">
               <div className="flex items-center px-3 py-2 rounded-lg bg-muted/50">
                 <Avatar className="h-10 w-10">
@@ -139,14 +177,13 @@ export default async function OwnerLayout({
                     src={session.user.image || ""}
                     alt={session.user.name || "User"}
                   />
-                  <AvatarFallback>
-                    {initials}
-                  </AvatarFallback>
+                  <AvatarFallback>{initials}</AvatarFallback>
                 </Avatar>
                 <div className="ml-3 overflow-hidden">
                   <p className="text-sm font-medium truncate">
-                    {session.user.name || session.user.first_name && session.user.last_name 
-                      ? `${session.user.first_name} ${session.user.last_name}` 
+                    {session.user.name ||
+                    (session.user.first_name && session.user.last_name)
+                      ? `${session.user.first_name} ${session.user.last_name}`
                       : session.user.email}
                   </p>
                   <p className="text-xs text-muted-foreground">Hostel Owner</p>
@@ -159,7 +196,10 @@ export default async function OwnerLayout({
                 const isActive = item.href === "/owner/dashboard"; // Update this based on current route
                 if (item.disabled) {
                   return (
-                    <div key={item.name} className="flex items-center px-3 py-2 rounded-md gap-3 text-sm transition-colors text-muted-foreground/60 cursor-not-allowed">
+                    <div
+                      key={item.name}
+                      className="flex items-center px-3 py-2 rounded-md gap-3 text-sm transition-colors text-muted-foreground/60 cursor-not-allowed"
+                    >
                       <item.icon className={`h-5 w-5 text-muted-foreground`} />
                       <span>{item.name} (Coming Soon)</span>
                     </div>
@@ -175,16 +215,26 @@ export default async function OwnerLayout({
                         : "hover:bg-muted/60 text-muted-foreground hover:text-foreground"
                     }`}
                   >
-                    <item.icon className={`h-5 w-5 ${isActive ? "text-primary" : "text-muted-foreground"}`} />
+                    <item.icon
+                      className={`h-5 w-5 ${
+                        isActive ? "text-primary" : "text-muted-foreground"
+                      }`}
+                    />
                     <span>{item.name}</span>
-                    {isActive && <ChevronRight className="h-4 w-4 ml-auto text-primary" />}
+                    {isActive && (
+                      <ChevronRight className="h-4 w-4 ml-auto text-primary" />
+                    )}
                   </Link>
                 );
               })}
             </nav>
 
-            <form action="/api/auth/signout" method="post" className="mt-auto">
-              <Button variant="ghost" className="w-full justify-start text-muted-foreground hover:text-foreground" type="submit">
+            <form action={signOutAction} className="mt-auto">
+              <Button
+                variant="ghost"
+                className="w-full justify-start text-muted-foreground hover:text-foreground"
+                type="submit"
+              >
                 <LogOut className="h-5 w-5 mr-3" />
                 Sign out
               </Button>
@@ -194,11 +244,9 @@ export default async function OwnerLayout({
 
         {/* Main Content */}
         <main className="flex-1 lg:pl-64">
-          <div className="py-6 px-4 sm:px-6 lg:px-8">
-            {children}
-          </div>
+          <div className="py-6 px-4 sm:px-6 lg:px-8">{children}</div>
         </main>
       </div>
     </div>
   );
-} 
+}

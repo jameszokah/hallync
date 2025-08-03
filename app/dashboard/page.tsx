@@ -480,7 +480,7 @@ export default async function DashboardPage({
                       </CardContent>
                       <CardFooter className="flex justify-between border-t pt-4">
                         <div className="font-medium">GHS {booking.amount}</div>
-                        <Link href={`/bookings/${booking.id}`}>
+                        <Link href={`/dashboard/bookings/${booking.id}`}>
                           <Button size="sm">View Details</Button>
                         </Link>
                       </CardFooter>

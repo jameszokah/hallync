@@ -18,6 +18,9 @@ import {
   BookOpen,
   ChevronDown,
   ListFilter,
+  Microwave,
+  WashingMachine,
+  HelpCircle,
 } from "lucide-react";
 
 import { Button } from "@/components/ui/button";
@@ -71,6 +74,7 @@ import {
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
 import { HostelImages, HostelReviews, Hostels } from "@/app/generated/prisma";
+import { amenities, distanceToCampus, roomTypes } from "@/lib/utils";
 
 interface University {
   id: string;
@@ -185,6 +189,33 @@ function Filters({
     }
   };
 
+   const amenitiesData = amenities.map((amenity) => ({
+     ...amenity,
+     icon:
+       amenity.value === "wifi"
+         ? Wifi
+         : amenity.value === "security"
+         ? Shield
+         : amenity.value === "water"
+         ? Droplets
+         : amenity.value === "electricity"
+         ? Zap
+         : amenity.value === "study_room"
+         ? BookOpen
+         : // : amenity.value === "kitchen" ? Kitchen
+         //   : amenity.value === "laundry" ? Laundry
+         //     : amenity.value === "furnished" ? Furnished
+         //       : amenity.value === "bathroom" ? Bathroom
+         //         : amenity.value === "balcony" ? Balcony
+         //           : amenity.value === "air_conditioning" ? AirConditioning
+         //             : amenity.value === "tv" ? Tv : amenity.value === "fridge" ? Fridge
+         amenity.value === "microwave"
+         ? Microwave
+         : amenity.value === "washing_machine"
+         ? WashingMachine
+         : HelpCircle,
+   }));
+
   return (
     <aside
       className={`w-full md:w-72 lg:w-80 p-6 bg-background border-r ${className}`}
@@ -219,24 +250,18 @@ function Filters({
             <AccordionTrigger className="text-sm font-medium">
               Amenities
             </AccordionTrigger>
-            <AccordionContent className="pt-2 space-y-2">
-              {[
-                { id: "wifi", label: "WiFi", icon: Wifi },
-                { id: "security", label: "24/7 Security", icon: Shield },
-                { id: "water", label: "Constant Water", icon: Droplets },
-                { id: "electricity", label: "Reliable Power", icon: Zap },
-                // Add more amenities as needed
-              ].map((amenity) => (
-                <div key={amenity.id} className="flex items-center space-x-2">
+            <AccordionContent className="pt-2 space-y-2 grid grid-cols-2 gap-2">
+              {amenitiesData.map((amenity) => (
+                <div key={amenity.value} className="flex items-center space-x-2">
                   <Checkbox
-                    id={amenity.id}
-                    checked={selectedAmenities.includes(amenity.id)}
+                    id={amenity.value}
+                    checked={selectedAmenities.includes(amenity.value)}
                     onCheckedChange={(checked) =>
-                      handleAmenityChange(amenity.id, checked)
+                      handleAmenityChange(amenity.value, checked)
                     }
                   />
                   <label
-                    htmlFor={amenity.id}
+                    htmlFor={amenity.value}
                     className="text-xs font-medium leading-none peer-disabled:cursor-not-allowed peer-disabled:opacity-70 flex items-center"
                   >
                     <amenity.icon className="h-3.5 w-3.5 mr-1.5 text-muted-foreground" />{" "}
@@ -262,18 +287,14 @@ function Filters({
                   <SelectItem value="all" className="text-xs">
                     All Distances
                   </SelectItem>
-                  <SelectItem value="0-5" className="text-xs">
-                    <span className="font-medium">0-5 km</span>
-                  </SelectItem>
-                  <SelectItem value="5-10" className="text-xs">
-                    <span className="font-medium">5-10 km</span>
-                  </SelectItem>
-                  <SelectItem value="10-15" className="text-xs">
-                    <span className="font-medium">10-15 km</span>
-                  </SelectItem>
-                  <SelectItem value="15-20" className="text-xs">
-                    <span className="font-medium">15-20 km</span>
-                  </SelectItem>
+                   
+                  {
+                    distanceToCampus.map((distance) => (
+                      <SelectItem value={distance.value} className="text-xs">
+                        <span className="font-medium">{distance.label}</span>
+                      </SelectItem>
+                    ))  
+                 }
                 </SelectContent>
               </Select>
             </AccordionContent>
@@ -293,15 +314,13 @@ function Filters({
               <SelectItem value="all" className="text-xs">
                 All Types
               </SelectItem>
-              <SelectItem value="single" className="text-xs">
-                Single Room
-              </SelectItem>
-              <SelectItem value="double" className="text-xs">
-                Double Room
-              </SelectItem>
-              <SelectItem value="shared" className="text-xs">
-                Shared Room (3+ beds)
-              </SelectItem>
+              {
+                roomTypes.map((room) => (
+                  <SelectItem key={room.value} value={room.value} className="text-xs">
+                    <span className="font-medium">{room.label}</span>
+                  </SelectItem>
+                ))
+              }
               {/* Add more room types */}
             </SelectContent>
           </Select>
@@ -345,8 +364,8 @@ function HostelCard({ hostel }: { hostel: HostelWithExtras }) {
           <Image
             src={hostel.images[0]?.url || "/placeholder.svg"}
             alt={hostel.name}
-            layout="fill"
-            objectFit="cover"
+            fill
+            sizes="(max-width: 768px) 100vw, (max-width: 1200px) 50vw, 33vw"
             className="transition-transform duration-700 ease-out group-hover:scale-110 z-0"
           />
           <div className="absolute top-3 left-3 z-20 flex items-center gap-1.5">

@@ -2,7 +2,6 @@
 
 import { useState } from "react";
 import { useRouter } from "next/navigation";
-import Link from "next/link";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -14,16 +13,12 @@ import {
   CardHeader,
   CardTitle,
 } from "@/components/ui/card";
-import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from "@/components/ui/select";
-import { Loader2 } from "lucide-react";
+import { Loader2, CheckCircle2, Mail, Phone, User } from "lucide-react";
 import { registerAction } from "@/lib/actions/auth";
 import { toast } from "sonner";
+import { cn } from "@/lib/utils";
+import { motion } from "framer-motion";
+import { PasswordInput } from "@/components/ui/password-input";
 
 export function RegisterForm() {
   const [isLoading, setIsLoading] = useState(false);
@@ -33,7 +28,7 @@ export function RegisterForm() {
   const [phone, setPhone] = useState("");
   const [password, setPassword] = useState("");
   const [confirmPassword, setConfirmPassword] = useState("");
-  const [role, setRole] = useState("STUDENT");
+  const [selectedRole, setRole] = useState("STUDENT");
   const router = useRouter();
 
   const handleSubmit = async (e: React.FormEvent) => {
@@ -50,7 +45,7 @@ export function RegisterForm() {
         firstName,
         lastName,
         phone,
-        role
+        selectedRole
       );
 
       if (result.success) {
@@ -77,78 +72,124 @@ export function RegisterForm() {
       </CardHeader>
       <form onSubmit={handleSubmit}>
         <CardContent className="space-y-4">
-          <div className="grid grid-cols-2 gap-4">
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
             <div className="space-y-2">
               <Label htmlFor="first-name">First name</Label>
-              <Input
-                id="first-name"
-                value={firstName}
-                onChange={(e) => setFirstName(e.target.value)}
-                required
-              />
+              <div className="relative">
+                <User className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-gray-400" />
+                <Input
+                  id="first-name"
+                  value={firstName}
+                  onChange={(e) => setFirstName(e.target.value)}
+                  required
+                  className="pl-10"
+                />
+              </div>
             </div>
             <div className="space-y-2">
               <Label htmlFor="last-name">Last name</Label>
-              <Input
-                id="last-name"
-                value={lastName}
-                onChange={(e) => setLastName(e.target.value)}
-                required
-              />
+              <div className="relative">
+                <User className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-gray-400" />
+                <Input
+                  id="last-name"
+                  value={lastName}
+                  onChange={(e) => setLastName(e.target.value)}
+                  required
+                  className="pl-10"
+                />
+              </div>
             </div>
           </div>
           <div className="space-y-2">
             <Label htmlFor="email">Email</Label>
-            <Input
-              id="email"
-              type="email"
-              placeholder="your.email@example.com"
-              value={email}
-              onChange={(e) => setEmail(e.target.value)}
-              required
-            />
+            <div className="relative">
+              <Mail className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-gray-400" />
+              <Input
+                id="email"
+                type="email"
+                placeholder="your.email@example.com"
+                value={email}
+                onChange={(e) => setEmail(e.target.value)}
+                required
+                className="pl-10"
+              />
+            </div>
           </div>
           <div className="space-y-2">
             <Label htmlFor="phone">Phone number</Label>
-            <Input
-              id="phone"
-              type="tel"
-              value={phone}
-              onChange={(e) => setPhone(e.target.value)}
-              required
-            />
+            <div className="relative">
+              <Phone className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-gray-400" />
+              <Input
+                id="phone"
+                type="tel"
+                value={phone}
+                onChange={(e) => setPhone(e.target.value)}
+                required
+                className="pl-10"
+              />
+            </div>
           </div>
           <div className="space-y-2">
             <Label htmlFor="password">Password</Label>
-            <Input
+            <PasswordInput
               id="password"
-              type="password"
               value={password}
-              onChange={(e) => setPassword(e.target.value)}
+              onChange={(e: React.ChangeEvent<HTMLInputElement>)  =>
+                setPassword(e.target.value)
+              }
               required
             />
           </div>
           <div className="space-y-2">
             <Label htmlFor="confirm-password">Confirm password</Label>
-            <Input
+            <PasswordInput
               id="confirm-password"
-              type="password"
               value={confirmPassword}
-              onChange={(e) => setConfirmPassword(e.target.value)}
+              onChange={(e: React.ChangeEvent<HTMLInputElement>) =>
+                setConfirmPassword(e.target.value)
+              }
               required
             />
           </div>
           <div className="space-y-2">
             <Label>I am a</Label>
-            <Select value={role} onValueChange={setRole}>
-              <SelectTrigger>
-                <SelectValue placeholder="Select your role" />
-              </SelectTrigger>
-              <SelectContent>
-                <SelectItem value="STUDENT">Student</SelectItem>
-                <SelectItem value="OWNER">Hostel Owner</SelectItem>
-              </SelectContent>
-            </Select>
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+              {["STUDENT", "OWNER"].map((role) => (
+                <div
+                  key={role}
+                  className={cn(
+                    "rounded-lg border-2 p-4 cursor-pointer transition-all duration-300 relative",
+                    selectedRole === role
+                      ? "bg-primary/10 border-primary text-primary"
+                      : "border-gray-200 hover:border-primary/50"
+                  )}
+                  onClick={() => setRole(role)}
+                >
+                  {selectedRole === role && (
+                    <motion.div
+                      initial={{ scale: 0.5, opacity: 0 }}
+                      animate={{ scale: 1, opacity: 1 }}
+                      transition={{
+                        type: "spring",
+                        stiffness: 500,
+                        damping: 30,
+                      }}
+                      className="absolute top-2 right-2"
+                    >
+                      <CheckCircle2 className="w-5 h-5 text-primary" />
+                    </motion.div>
+                  )}
+                  <div className="flex flex-col gap-2">
+                    <h3 className="text-lg font-bold">{role}</h3>
+                    <p className="text-sm">
+                      {role === "STUDENT"
+                        ? "I am a student looking for a hostel"
+                        : "I am a hostel owner looking to list my hostel"}
+                    </p>
+                  </div>
+                </div>
+              ))}
+            </div>
           </div>
         </CardContent>
         <CardFooter className="flex flex-col">

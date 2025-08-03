@@ -3,6 +3,7 @@
 import prisma from "@/lib/prisma";
 import { z } from "zod";
 import { revalidatePath } from "next/cache";
+import { uploadHostelImages } from "@/lib/cloudflare";
 
 const roomSchema = z.object({
     hostel_id: z.string().uuid(),
@@ -10,7 +11,7 @@ const roomSchema = z.object({
     description: z.string().optional(),
     price: z.number().positive(),
     capacity: z.number().int().positive(),
-    available: z.number().int().positive(),
+    available: z.boolean().optional().default(true),
     amenities: z.string().transform((val) => {
         if (!val) return {};
         try {
@@ -62,6 +63,11 @@ export async function createRoom(formData: any) {
             ...(is_furnished !== undefined && { is_furnished }),
         };
 
+        const images = await uploadHostelImages(
+            formData.owner_id,
+            formData.images,
+        );
+
         // Create the room in the database
         const room = await prisma.room.create({
             data: {
@@ -70,42 +76,49 @@ export async function createRoom(formData: any) {
                 description,
                 price,
                 capacity,
-                available: true, // Set to true by default
+                available: available, // Set to true by default
+                amenities: combinedAmenities,
+                images: {
+                    create: images.map((image, index) => ({
+                        url: image,
+                        is_primary: index === 0,
+                    })),
+                },
                 // Create specified number of identical rooms
                 // This is handled differently - we create one room type entry
             },
         });
 
         // Handle image uploads if they exist
-        if (
-            formData.images && Array.isArray(formData.images) &&
-            formData.images.length > 0
-        ) {
-            // In a real application, you would upload images to a storage service
-            // and save the URLs. Here we'll simulate that process.
+        // if (
+        //     formData.images && Array.isArray(formData.images) &&
+        //     formData.images.length > 0
+        // ) {
+        //     // In a real application, you would upload images to a storage service
+        //     // and save the URLs. Here we'll simulate that process.
 
-            // For demonstration, let's assume we have a helper function to upload images
-            // and we're just saving the paths/URLs
-            const imageUrls = await Promise.all(
-                formData.images.map(async (image: File, index: number) => {
-                    // This is a placeholder - in a real app, upload to S3/Cloudinary/etc
-                    // and get back a URL
-                    const imageUrl =
-                        `/placeholder.jpg?room=${room.id}&index=${index}`;
+        //     // For demonstration, let's assume we have a helper function to upload images
+        //     // and we're just saving the paths/URLs
+        //     const imageUrls = await Promise.all(
+        //         formData.images.map(async (image: File, index: number) => {
+        //             // This is a placeholder - in a real app, upload to S3/Cloudinary/etc
+        //             // and get back a URL
+        //             const imageUrl =
+        //                 `/placeholder.jpg?room=${room.id}&index=${index}`;
 
-                    return {
-                        url: imageUrl,
-                        room_id: room.id,
-                        is_primary: index === 0, // First image is primary
-                    };
-                }),
-            );
+        //             return {
+        //                 url: imageUrl,
+        //                 room_id: room.id,
+        //                 is_primary: index === 0, // First image is primary
+        //             };
+        //         }),
+        //     );
 
-            // Save image references in the database
-            await prisma.roomImages.createMany({
-                data: imageUrls,
-            });
-        }
+        //     // Save image references in the database
+        //     await prisma.roomImages.createMany({
+        //         data: imageUrls,
+        //     });
+        // }
 
         // Revalidate the paths to update the UI
         revalidatePath(`/owner/hostels/${hostel_id}`);

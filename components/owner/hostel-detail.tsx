@@ -335,7 +335,7 @@ export function HostelDetailPage({
             variant="outline"
             onClick={() => router.push(`/owner/hostels/${hostel.id}/edit`)}
           >
-            <Edit className="h-4 w-4 mr-2" /> Edit Hostel
+            <Edit className="h-4 w-4 mr-2" /> Edit
           </Button>
 
           <Dialog
@@ -608,15 +608,6 @@ export function HostelDetailPage({
                     variant="outline"
                     className="w-full justify-start"
                     onClick={() =>
-                      router.push(`/owner/hostels/${hostel.id}/edit`)
-                    }
-                  >
-                    <Edit className="h-4 w-4 mr-2" /> Edit Hostel Details
-                  </Button>
-                  <Button
-                    variant="outline"
-                    className="w-full justify-start"
-                    onClick={() =>
                       copyToClipboard(
                         `${window.location.origin}/hostels/${hostel.id}`,
                         "Hostel link copied to clipboard"
@@ -837,7 +828,7 @@ export function HostelDetailPage({
                             className="flex-grow-0"
                             onClick={() =>
                               router.push(
-                                `/owner/hostels/${hostel.id}/rooms/${room.id}/edit`
+                                `/owner/hostels/${hostel.id}/rooms/${room.id}`
                               )
                             }
                           >

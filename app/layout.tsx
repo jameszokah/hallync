@@ -22,7 +22,7 @@ export default function RootLayout({
 }>) {
   return (
     <html lang="en" suppressHydrationWarning>
-      <body className={openSans.className}>
+      <body className={openSans.className} suppressHydrationWarning>
         <Suspense>
           <SessionProvider>
           <AuthProvider>

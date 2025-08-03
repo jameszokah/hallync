@@ -4,13 +4,13 @@ import { Star, MapPin, Wifi, Shield } from "lucide-react"
 
 import { Badge } from "@/components/ui/badge"
 import { Button } from "@/components/ui/button"
-import { Hostels } from "@/app/generated/prisma"
+import { Hostels, University } from "@/app/generated/prisma"
 
   export interface IHostel extends Hostels {
     id: string
     name: string
     location: string
-    university: string
+    university: University | null
     verified: boolean
     image: string
     rating: number
@@ -48,11 +48,11 @@ export function FeaturedHostels({ hostels }: FeaturedHostelsProps) {
                 />
               </div>
               {hostel.verified && (
-                <Badge className="absolute top-2 right-2 bg-green-600" variant="secondary">
+                <Badge className="absolute top-2 right-2 bg-green-600 text-white hover:text-gray-600" variant="secondary">
                   <Shield className="h-3 w-3 mr-1" /> Verified
                 </Badge>
               )}
-              <Badge className="absolute bottom-2 left-2">{hostel.university}</Badge>
+              {hostel.university && <Badge className="absolute bottom-2 left-2">{hostel.university.name}</Badge>}
             </div>
             <div className="p-4">
               <div className="flex justify-between items-start mb-2">

@@ -26,6 +26,10 @@ import {
   ChevronRight,
   Trash2,
   PlusCircle,
+  Tv,
+  Microwave,
+  WashingMachine,
+  HelpCircle,
 } from "lucide-react";
 
 import { Button } from "@/components/ui/button";
@@ -51,7 +55,8 @@ import {
 import { toast } from "sonner";
 import { Progress } from "@/components/ui/progress";
 import { createHostelAction } from "@/lib/actions/hostel";
-import { cn } from "@/lib/utils";
+import { amenities, cn, distanceToCampus } from "@/lib/utils";
+import { MapPicker } from "@/components/ui/map-picker";
 
 interface University {
   id: string;
@@ -62,6 +67,14 @@ interface NewHostelFormProps {
   universities: University[];
   userId: string;
 }
+
+type AmenityValue = (typeof amenities)[number]["value"];
+
+const amenitiesSchema = z.object(
+  Object.fromEntries(
+    amenities.map(({ value }) => [value, z.boolean()])
+  ) as Record<AmenityValue, z.ZodBoolean>
+);
 
 const formSchema = z.object({
   name: z
@@ -76,17 +89,10 @@ const formSchema = z.object({
   university: z.string().min(1, { message: "Please select a university" }),
   distance_to_campus: z
     .string()
-    .min(1, { message: "Please provide distance to campus" }),
-  amenities: z.object({
-    wifi: z.boolean(),
-    security: z.boolean(),
-    water: z.boolean(),
-    electricity: z.boolean(),
-    study_room: z.boolean(),
-    air_conditioning: z.boolean(),
-    kitchen: z.boolean(),
-    laundry: z.boolean(),
-  }),
+    .refine((value) => value !== "", { message: "Please select a distance" }),
+  amenities: amenitiesSchema,
+  latitude: z.number().optional(),
+  longitude: z.number().optional(),
 });
 
 type FormData = z.infer<typeof formSchema>;
@@ -99,6 +105,8 @@ export function NewHostelForm({ universities, userId }: NewHostelFormProps) {
   const [images, setImages] = useState<File[]>([]);
   const [imagePreviews, setImagePreviews] = useState<string[]>([]);
   const [progress, setProgress] = useState(0);
+  const [locationType, setLocationType] = useState<"map" | "manual">("map");
+  const [isGeocoding, setIsGeocoding] = useState(false);
 
   const steps = [
     {
@@ -117,6 +125,33 @@ export function NewHostelForm({ universities, userId }: NewHostelFormProps) {
     { title: "Review & Submit", description: "Review information and submit" },
   ];
 
+  const amenitiesData = amenities.map((amenity) => ({
+    ...amenity,
+    icon:
+      amenity.value === "wifi"
+        ? Wifi
+        : amenity.value === "security"
+        ? Shield
+        : amenity.value === "water"
+        ? Droplets
+        : amenity.value === "electricity"
+        ? Zap
+        : amenity.value === "study_room"
+        ? BookOpen
+        : // : amenity.value === "kitchen" ? Kitchen
+        //   : amenity.value === "laundry" ? Laundry
+        //     : amenity.value === "furnished" ? Furnished
+        //       : amenity.value === "bathroom" ? Bathroom
+        //         : amenity.value === "balcony" ? Balcony
+        //           : amenity.value === "air_conditioning" ? AirConditioning
+        //             : amenity.value === "tv" ? Tv : amenity.value === "fridge" ? Fridge
+        amenity.value === "microwave"
+        ? Microwave
+        : amenity.value === "washing_machine"
+        ? WashingMachine
+        : HelpCircle,
+  }));
+
   const {
     register,
     handleSubmit,
@@ -125,29 +160,24 @@ export function NewHostelForm({ universities, userId }: NewHostelFormProps) {
     formState: { errors, isValid },
     trigger,
     getValues,
+    setValue,
   } = useForm<FormData>({
     resolver: zodResolver(formSchema),
     mode: "onChange",
     defaultValues: {
-      amenities: {
-        wifi: false,
-        security: false,
-        water: false,
-        electricity: false,
-        study_room: false,
-        air_conditioning: false,
-        kitchen: false,
-        laundry: false,
-      },
+      amenities: Object.fromEntries(
+        amenities.map(({ value }) => [value, false])
+      ),
     },
   });
+
+  const locationValue = watch("location");
+  const watchAllFields = watch();
 
   useEffect(() => {
     // Set progress based on current step
     setProgress(((currentStep + 1) / steps.length) * 100);
   }, [currentStep, steps.length]);
-
-  const watchAllFields = watch();
 
   const handleImageChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     if (e.target.files) {
@@ -225,6 +255,7 @@ export function NewHostelForm({ universities, userId }: NewHostelFormProps) {
         ...data,
         owner_id: userId,
         images,
+        amenities: data.amenities,
       });
 
       if (result.success) {
@@ -296,27 +327,111 @@ export function NewHostelForm({ universities, userId }: NewHostelFormProps) {
             </div>
 
             <div className="space-y-2">
-              <Label htmlFor="location" className="text-base">
-                Location
-              </Label>
-              <div className="relative">
-                <Input
-                  id="location"
-                  placeholder="e.g. East Legon, Near Starbites Restaurant"
-                  className={cn(
-                    "pl-10",
-                    errors.location && "border-destructive"
-                  )}
-                  {...register("location")}
-                />
-                <MapPin className="h-5 w-5 absolute left-2 top-1/2 transform -translate-y-1/2 text-muted-foreground" />
+              <Label className="text-base">Location</Label>
+              <div className="flex gap-2 rounded-md bg-muted p-1">
+                <Button
+                  type="button"
+                  variant={locationType === "map" ? "default" : "ghost"}
+                  onClick={() => setLocationType("map")}
+                  className="flex-1"
+                >
+                  Select on Map
+                </Button>
+                <Button
+                  type="button"
+                  variant={locationType === "manual" ? "default" : "ghost"}
+                  onClick={() => setLocationType("manual")}
+                  className="flex-1"
+                >
+                  Enter Manually
+                </Button>
               </div>
-              {errors.location && (
-                <p className="text-sm text-destructive">
-                  {errors.location.message}
-                </p>
-              )}
             </div>
+
+            {locationType === "manual" ? (
+              <div className="space-y-2">
+                <Label htmlFor="location" className="text-base">
+                  Manual Location
+                </Label>
+                <div className="relative">
+                  <Input
+                    id="location"
+                    placeholder="e.g. East Legon, Near Starbites Restaurant"
+                    className={cn(
+                      "pl-10",
+                      errors.location && "border-destructive"
+                    )}
+                    {...register("location")}
+                  />
+                  <MapPin className="h-5 w-5 absolute left-2 top-1/2 transform -translate-y-1/2 text-muted-foreground" />
+                </div>
+                {errors.location && (
+                  <p className="text-sm text-destructive">
+                    {errors.location.message}
+                  </p>
+                )}
+              </div>
+            ) : (
+              <div>
+                <div className="h-96 w-full rounded-md border overflow-hidden">
+                  <MapPicker
+                    mode="picker"
+                    onLocationChange={async (loc) => {
+                      setValue("latitude", loc.latitude);
+                      setValue("longitude", loc.longitude);
+                      setIsGeocoding(true);
+                      try {
+                        const response = await fetch(
+                          `https://nominatim.openstreetmap.org/reverse?format=json&lat=${loc.latitude}&lon=${loc.longitude}`
+                        );
+                        if (!response.ok) {
+                          throw new Error("Failed to fetch address");
+                        }
+                        const data = await response.json();
+                        if (data && data.display_name) {
+                          setValue("location", data.display_name, {
+                            shouldValidate: true,
+                          });
+                        } else {
+                          throw new Error("Address not found in response");
+                        }
+                      } catch (error) {
+                        console.error("Reverse geocoding failed:", error);
+                        setValue(
+                          "location",
+                          `Lat: ${loc.latitude.toFixed(
+                            4
+                          )}, Lng: ${loc.longitude.toFixed(4)}`
+                        );
+                        toast.error(
+                          "Could not fetch address. Please enter it manually."
+                        );
+                      } finally {
+                        setIsGeocoding(false);
+                      }
+                    }}
+                  />
+                </div>
+                <div className="mt-2 min-h-[56px]">
+                  {isGeocoding ? (
+                    <div className="flex items-center gap-2 p-3 bg-muted/50 rounded-md border">
+                      <p className="text-sm text-muted-foreground">
+                        Fetching address...
+                      </p>
+                    </div>
+                  ) : (
+                    locationValue && (
+                      <div className="p-3 bg-muted/50 rounded-md border">
+                        <Label className="text-xs">Selected Location</Label>
+                        <p className="text-sm text-foreground">
+                          {locationValue}
+                        </p>
+                      </div>
+                    )
+                  )}
+                </div>
+              </div>
+            )}
           </motion.div>
         );
       case 1:
@@ -373,15 +488,28 @@ export function NewHostelForm({ universities, userId }: NewHostelFormProps) {
                 Distance to Campus
               </Label>
               <div className="relative">
-                <Input
-                  id="distance_to_campus"
-                  placeholder="e.g. 5 min walk, 2 km"
-                  className={cn(
-                    "pl-10",
-                    errors.distance_to_campus && "border-destructive"
-                  )}
-                  {...register("distance_to_campus")}
-                />
+                <Select
+                  onValueChange={(value) => {
+                    setValue("distance_to_campus", value);
+                  }}
+                  defaultValue={getValues("distance_to_campus") as string}
+                >
+                  <SelectTrigger
+                    className={cn(
+                      "pl-10",
+                      errors.distance_to_campus && "border-destructive"
+                    )}
+                  >
+                    <SelectValue placeholder="Select distance" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    {distanceToCampus.map((distance) => (
+                      <SelectItem key={distance.value} value={distance.value}>
+                        {distance.label}
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
                 <Ruler className="h-5 w-5 absolute left-2 top-1/2 transform -translate-y-1/2 text-muted-foreground" />
               </div>
               {errors.distance_to_campus && (
@@ -403,239 +531,47 @@ export function NewHostelForm({ universities, userId }: NewHostelFormProps) {
           >
             <Label className="text-base">Amenities</Label>
             <div className="grid grid-cols-1 md:grid-cols-2 gap-5">
-              <Card
-                className={cn(
-                  "border-2 transition-all",
-                  watch("amenities.wifi")
-                    ? "border-primary/50 bg-primary/5"
-                    : "hover:bg-muted/50"
-                )}
-              >
-                <CardContent className="pt-6 pb-6">
-                  <Controller
-                    name="amenities.wifi"
-                    control={control}
-                    render={({ field }) => (
-                      <div className="flex items-start space-x-3">
-                        <div className="flex-shrink-0">
-                          <Checkbox
-                            checked={field.value}
-                            onCheckedChange={field.onChange}
-                            className="mt-0.5"
-                          />
-                        </div>
-                        <div>
-                          <Label
-                            htmlFor="wifi"
-                            className="text-base font-medium flex items-center"
-                          >
-                            <Wifi className="h-5 w-5 mr-2 text-primary" /> WiFi
-                            Internet
-                          </Label>
+              {amenitiesData.map((amenity) => (
+                <Card
+                  key={amenity.value}
+                  className={cn(
+                    "border-2 transition-all",
+                    watch(`amenities.${amenity.value}`)
+                      ? "border-primary/50 bg-primary/5"
+                      : "hover:bg-muted/50"
+                  )}
+                >
+                  <CardContent className="pt-6 pb-6">
+                    <Controller
+                      name={`amenities.${amenity.value}`}
+                      control={control}
+                      render={({ field }) => (
+                        <div className="flex items-start space-x-3">
+                          <div className="flex-shrink-0">
+                            <Checkbox
+                              checked={field.value}
+                              onCheckedChange={field.onChange}
+                              className="mt-0.5"
+                            />
+                          </div>
+                          <div>
+                            <Label
+                              htmlFor={amenity.value}
+                              className="text-base font-medium flex items-center"
+                            >
+                              <amenity.icon className="h-5 w-5 mr-2 text-primary" />
+                              {amenity.label}
+                            </Label>
+                          </div>
                           <p className="text-muted-foreground text-sm mt-1">
-                            High-speed internet access for residents
+                            {amenity.description}
                           </p>
                         </div>
-                      </div>
-                    )}
-                  />
-                </CardContent>
-              </Card>
-
-              <Card
-                className={cn(
-                  "border-2 transition-all",
-                  watch("amenities.security")
-                    ? "border-primary/50 bg-primary/5"
-                    : "hover:bg-muted/50"
-                )}
-              >
-                <CardContent className="pt-6 pb-6">
-                  <Controller
-                    name="amenities.security"
-                    control={control}
-                    render={({ field }) => (
-                      <div className="flex items-start space-x-3">
-                        <div className="flex-shrink-0">
-                          <Checkbox
-                            checked={field.value}
-                            onCheckedChange={field.onChange}
-                            className="mt-0.5"
-                          />
-                        </div>
-                        <div>
-                          <Label
-                            htmlFor="security"
-                            className="text-base font-medium flex items-center"
-                          >
-                            <Shield className="h-5 w-5 mr-2 text-primary" />{" "}
-                            24/7 Security
-                          </Label>
-                          <p className="text-muted-foreground text-sm mt-1">
-                            Round-the-clock security personnel and systems
-                          </p>
-                        </div>
-                      </div>
-                    )}
-                  />
-                </CardContent>
-              </Card>
-
-              <Card
-                className={cn(
-                  "border-2 transition-all",
-                  watch("amenities.water")
-                    ? "border-primary/50 bg-primary/5"
-                    : "hover:bg-muted/50"
-                )}
-              >
-                <CardContent className="pt-6 pb-6">
-                  <Controller
-                    name="amenities.water"
-                    control={control}
-                    render={({ field }) => (
-                      <div className="flex items-start space-x-3">
-                        <div className="flex-shrink-0">
-                          <Checkbox
-                            checked={field.value}
-                            onCheckedChange={field.onChange}
-                            className="mt-0.5"
-                          />
-                        </div>
-                        <div>
-                          <Label
-                            htmlFor="water"
-                            className="text-base font-medium flex items-center"
-                          >
-                            <Droplets className="h-5 w-5 mr-2 text-primary" />{" "}
-                            Constant Water
-                          </Label>
-                          <p className="text-muted-foreground text-sm mt-1">
-                            Reliable water supply with backup systems
-                          </p>
-                        </div>
-                      </div>
-                    )}
-                  />
-                </CardContent>
-              </Card>
-
-              <Card
-                className={cn(
-                  "border-2 transition-all",
-                  watch("amenities.electricity")
-                    ? "border-primary/50 bg-primary/5"
-                    : "hover:bg-muted/50"
-                )}
-              >
-                <CardContent className="pt-6 pb-6">
-                  <Controller
-                    name="amenities.electricity"
-                    control={control}
-                    render={({ field }) => (
-                      <div className="flex items-start space-x-3">
-                        <div className="flex-shrink-0">
-                          <Checkbox
-                            checked={field.value}
-                            onCheckedChange={field.onChange}
-                            className="mt-0.5"
-                          />
-                        </div>
-                        <div>
-                          <Label
-                            htmlFor="electricity"
-                            className="text-base font-medium flex items-center"
-                          >
-                            <Zap className="h-5 w-5 mr-2 text-primary" /> Backup
-                            Power
-                          </Label>
-                          <p className="text-muted-foreground text-sm mt-1">
-                            Generator or solar backup during outages
-                          </p>
-                        </div>
-                      </div>
-                    )}
-                  />
-                </CardContent>
-              </Card>
-
-              <Card
-                className={cn(
-                  "border-2 transition-all",
-                  watch("amenities.study_room")
-                    ? "border-primary/50 bg-primary/5"
-                    : "hover:bg-muted/50"
-                )}
-              >
-                <CardContent className="pt-6 pb-6">
-                  <Controller
-                    name="amenities.study_room"
-                    control={control}
-                    render={({ field }) => (
-                      <div className="flex items-start space-x-3">
-                        <div className="flex-shrink-0">
-                          <Checkbox
-                            checked={field.value}
-                            onCheckedChange={field.onChange}
-                            className="mt-0.5"
-                          />
-                        </div>
-                        <div>
-                          <Label
-                            htmlFor="study_room"
-                            className="text-base font-medium flex items-center"
-                          >
-                            <BookOpen className="h-5 w-5 mr-2 text-primary" />{" "}
-                            Study Room
-                          </Label>
-                          <p className="text-muted-foreground text-sm mt-1">
-                            Dedicated quiet space for studying
-                          </p>
-                        </div>
-                      </div>
-                    )}
-                  />
-                </CardContent>
-              </Card>
-
-              <Card
-                className={cn(
-                  "border-2 transition-all",
-                  watch("amenities.kitchen")
-                    ? "border-primary/50 bg-primary/5"
-                    : "hover:bg-muted/50"
-                )}
-              >
-                <CardContent className="pt-6 pb-6">
-                  <Controller
-                    name="amenities.kitchen"
-                    control={control}
-                    render={({ field }) => (
-                      <div className="flex items-start space-x-3">
-                        <div className="flex-shrink-0">
-                          <Checkbox
-                            checked={field.value}
-                            onCheckedChange={field.onChange}
-                            className="mt-0.5"
-                          />
-                        </div>
-                        <div>
-                          <Label
-                            htmlFor="kitchen"
-                            className="text-base font-medium flex items-center"
-                          >
-                            <BookOpen className="h-5 w-5 mr-2 text-primary" />{" "}
-                            Kitchen
-                          </Label>
-                          <p className="text-muted-foreground text-sm mt-1">
-                            Shared or private kitchen facilities
-                          </p>
-                        </div>
-                      </div>
-                    )}
-                  />
-                </CardContent>
-              </Card>
+                      )}
+                    />
+                  </CardContent>
+                </Card>
+              ))}
             </div>
           </motion.div>
         );
@@ -879,8 +815,8 @@ export function NewHostelForm({ universities, userId }: NewHostelFormProps) {
         </div>
 
         {/* Step Indicator */}
-        <div className="flex justify-center mt-6 mb-2">
-          <ul className="flex items-center gap-2">
+        <div className="flex justify-center mt-6 mb-2 ">
+          <ul className="flex items-center gap-2 space-x-12">
             {steps.map((step, index) => (
               <li
                 key={index}

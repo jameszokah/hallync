@@ -18,6 +18,7 @@ import {
   Upload,
   PlusCircle,
   Info,
+  Building2,
 } from "lucide-react";
 
 import { Button } from "@/components/ui/button";
@@ -44,13 +45,22 @@ import { Checkbox } from "@/components/ui/checkbox";
 import { Switch } from "@/components/ui/switch";
 import { createRoom } from "./actions";
 import { toast } from "sonner";
-import { cn } from "@/lib/utils";
+import { amenities, cn } from "@/lib/utils";
 import {
   Tooltip,
   TooltipContent,
   TooltipProvider,
   TooltipTrigger,
 } from "@/components/ui/tooltip";
+import { useSession } from "next-auth/react";
+
+type AmenityValue = (typeof amenities)[number]["value"];
+
+const amenitiesSchema = z.object(
+  Object.fromEntries(
+    amenities.map(({ value }) => [value, z.boolean()])
+  ) as Record<AmenityValue, z.ZodBoolean>
+);
 
 const roomFormSchema = z.object({
   type: z.string().min(2, {
@@ -68,15 +78,11 @@ const roomFormSchema = z.object({
   capacity: z.coerce.number().int().positive({
     message: "Capacity must be a positive integer.",
   }),
-  available: z.coerce.number().int().positive({
-    message: "Available rooms must be a positive integer.",
+  total_available: z.coerce.number().int().positive({
+    message: "Total available must be a positive integer.",
   }),
-  has_bathroom: z.boolean().default(false),
-  has_balcony: z.boolean().default(false),
-  has_ac: z.boolean().default(false),
-  has_tv: z.boolean().default(false),
-  has_fridge: z.boolean().default(false),
-  is_furnished: z.boolean().default(false),
+  available: z.boolean().optional().default(false),
+  amenities: amenitiesSchema,
 });
 
 type RoomFormValues = z.infer<typeof roomFormSchema>;
@@ -88,7 +94,7 @@ export default function NewRoomPage() {
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [images, setImages] = useState<File[]>([]);
   const [imagePreviews, setImagePreviews] = useState<string[]>([]);
-
+  const { data: session } = useSession();
   const containerVariants = {
     hidden: { opacity: 0 },
     visible: {
@@ -100,8 +106,8 @@ export default function NewRoomPage() {
   };
 
   const itemVariants = {
-    hidden: { y: 20, opacity: 0 },
-    visible: {
+    active: { y: 20, opacity: 0 },
+    inactive: {
       y: 0,
       opacity: 1,
       transition: { type: "spring", stiffness: 100 },
@@ -115,13 +121,24 @@ export default function NewRoomPage() {
       description: "",
       price: undefined,
       capacity: undefined,
-      available: undefined,
-      has_bathroom: false,
-      has_balcony: false,
-      has_ac: false,
-      has_tv: false,
-      has_fridge: false,
-      is_furnished: false,
+      available: false,
+      amenities: {
+        wifi: false,
+        security: false,
+        water: false,
+        electricity: false,
+        study_room: false,
+        microwave: false,
+        washing_machine: false,
+        kitchen: false,
+        laundry: false,
+        furnished: false,
+        bathroom: false,
+        balcony: false,
+        air_conditioning: false,
+        tv: false,
+        fridge: false,
+      },
     },
     mode: "onChange",
   });
@@ -161,12 +178,7 @@ export default function NewRoomPage() {
     try {
       // Process amenities
       const amenities = {
-        has_bathroom: data.has_bathroom,
-        has_balcony: data.has_balcony,
-        has_ac: data.has_ac,
-        has_tv: data.has_tv,
-        has_fridge: data.has_fridge,
-        is_furnished: data.is_furnished,
+        ...data.amenities,
       };
 
       // Convert to proper format for API
@@ -175,9 +187,14 @@ export default function NewRoomPage() {
       const result = await createRoom({
         ...data,
         hostel_id,
+        owner_id: session?.user.id,
         amenities: amenitiesString,
         images,
       });
+      if (result.error) {
+        toast.error(result.error);
+        return;
+      }
 
       toast.success("Room created successfully!");
       form.reset();
@@ -299,12 +316,39 @@ export default function NewRoomPage() {
 
                       <FormField
                         control={form.control}
+                        name="total_available"
+                        render={({ field }) => (
+                          <FormItem>
+                            <FormLabel className="flex items-center gap-2">
+                              <Building2 className="h-4 w-4" /> Total Available Rooms
+                            </FormLabel>
+                            <FormControl>
+                              <div className="relative">
+                                <Input
+                                  type="number"
+                                  placeholder="Total number of rooms"
+                                  {...field}
+                                />
+                              </div>
+                            </FormControl>
+                            <FormMessage />
+                          </FormItem>
+                        )}
+                      />
+
+                      <FormField
+                        control={form.control}
                         name="available"
                         render={({ field }) => (
                           <FormItem>
-                            <FormLabel>Available Units</FormLabel>
-                            <FormControl>
-                              <Input type="number" placeholder="1" {...field} />
+                            <FormLabel className="flex items-center gap-2">
+                              <Check className="h-4 w-4" /> Available 
+                            </FormLabel>
+                            <FormControl className="block">
+                              <Switch
+                                checked={field.value}
+                                onCheckedChange={field.onChange}
+                              />
                             </FormControl>
                             <FormMessage />
                           </FormItem>
@@ -351,142 +395,32 @@ export default function NewRoomPage() {
                     </CardDescription>
                   </CardHeader>
                   <CardContent>
-                    <div className="grid grid-cols-1 gap-3">
-                      <FormField
-                        control={form.control}
-                        name="is_furnished"
-                        render={({ field }) => (
-                          <FormItem className="flex items-center justify-between rounded-lg border p-3 shadow-sm">
-                            <div className="space-y-0.5">
-                              <FormLabel className="text-base">
-                                Furnished
-                              </FormLabel>
-                              <FormDescription>
-                                Room comes with basic furniture
-                              </FormDescription>
-                            </div>
-                            <FormControl>
-                              <Switch
-                                checked={field.value}
-                                onCheckedChange={field.onChange}
-                              />
-                            </FormControl>
-                          </FormItem>
-                        )}
-                      />
+                    <div className="grid grid-cols-2 gap-3">
 
-                      <FormField
-                        control={form.control}
-                        name="has_bathroom"
-                        render={({ field }) => (
-                          <FormItem className="flex items-center justify-between rounded-lg border p-3 shadow-sm">
-                            <div className="space-y-0.5">
-                              <FormLabel className="text-base">
-                                Private Bathroom
-                              </FormLabel>
-                              <FormDescription>
-                                Room has a private bathroom
-                              </FormDescription>
-                            </div>
-                            <FormControl>
-                              <Switch
-                                checked={field.value}
-                                onCheckedChange={field.onChange}
-                              />
-                            </FormControl>
-                          </FormItem>
-                        )}
-                      />
-
-                      <FormField
-                        control={form.control}
-                        name="has_balcony"
-                        render={({ field }) => (
-                          <FormItem className="flex items-center justify-between rounded-lg border p-3 shadow-sm">
-                            <div className="space-y-0.5">
-                              <FormLabel className="text-base">
-                                Balcony
-                              </FormLabel>
-                              <FormDescription>
-                                Room has a private balcony
-                              </FormDescription>
-                            </div>
-                            <FormControl>
-                              <Switch
-                                checked={field.value}
-                                onCheckedChange={field.onChange}
-                              />
-                            </FormControl>
-                          </FormItem>
-                        )}
-                      />
-
-                      <FormField
-                        control={form.control}
-                        name="has_ac"
-                        render={({ field }) => (
-                          <FormItem className="flex items-center justify-between rounded-lg border p-3 shadow-sm">
-                            <div className="space-y-0.5">
-                              <FormLabel className="text-base">
-                                Air Conditioning
-                              </FormLabel>
-                              <FormDescription>
-                                Room has air conditioning
-                              </FormDescription>
-                            </div>
-                            <FormControl>
-                              <Switch
-                                checked={field.value}
-                                onCheckedChange={field.onChange}
-                              />
-                            </FormControl>
-                          </FormItem>
-                        )}
-                      />
-
-                      <FormField
-                        control={form.control}
-                        name="has_tv"
-                        render={({ field }) => (
-                          <FormItem className="flex items-center justify-between rounded-lg border p-3 shadow-sm">
-                            <div className="space-y-0.5">
-                              <FormLabel className="text-base">TV</FormLabel>
-                              <FormDescription>
-                                Room comes with a television
-                              </FormDescription>
-                            </div>
-                            <FormControl>
-                              <Switch
-                                checked={field.value}
-                                onCheckedChange={field.onChange}
-                              />
-                            </FormControl>
-                          </FormItem>
-                        )}
-                      />
-
-                      <FormField
-                        control={form.control}
-                        name="has_fridge"
-                        render={({ field }) => (
-                          <FormItem className="flex items-center justify-between rounded-lg border p-3 shadow-sm">
-                            <div className="space-y-0.5">
-                              <FormLabel className="text-base">
-                                Refrigerator
-                              </FormLabel>
-                              <FormDescription>
-                                Room has a mini fridge
-                              </FormDescription>
-                            </div>
-                            <FormControl>
-                              <Switch
-                                checked={field.value}
-                                onCheckedChange={field.onChange}
-                              />
-                            </FormControl>
-                          </FormItem>
-                        )}
-                      />
+                      {
+                        amenities.map((amenity) => (
+                          <FormField
+                            control={form.control}
+                            name={`amenities.${amenity.value}`}
+                            render={({ field }) => (
+                              <FormItem className="flex items-center justify-between rounded-lg border p-3 shadow-sm">
+                                <div className="space-y-0.5">
+                                    <FormLabel className="text-base">{amenity.label}</FormLabel>
+                                  <FormDescription>
+                                    Room has {amenity.label}
+                                  </FormDescription>
+                                </div>
+                                <FormControl>
+                                  <Switch
+                                    checked={field.value}
+                                    onCheckedChange={field.onChange}
+                                  />
+                                </FormControl>
+                              </FormItem>
+                            )}
+                          />
+                        ))
+                      }
                     </div>
                   </CardContent>
                 </Card>

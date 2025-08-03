@@ -22,6 +22,7 @@ import {
   ChevronLeft,
   ChevronRight,
 } from "lucide-react";
+import { motion, AnimatePresence } from "framer-motion";
 
 import { Button } from "@/components/ui/button";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
@@ -36,17 +37,23 @@ import { Footer } from "@/components/footer";
 import { HostelReviews } from "@/components/hostel-reviews";
 import { BookingForm } from "@/components/booking-form";
 import { useAuth } from "@/components/auth/auth-provider";
-import { Badge } from "@/components/ui/badge";    
+import { Badge } from "@/components/ui/badge";
 import prisma from "@/lib/prisma";
 import {
   HostelImages,
   Hostels as HostelType,
   HostelReviews as HostelReviewsType,
 } from "@/app/generated/prisma";
-import { saveHostel, unsaveHostel } from "@/lib/actions/hostel";
+import {
+  saveHostel,
+  unsaveHostel,
+  getSavedHostelStatus,
+} from "@/lib/actions/hostel";
 import { HostelImageGallery } from "./hostel-image-gallery";
 import { toast } from "sonner";
 import { useSession } from "next-auth/react";
+import { MapPicker } from "@/components/ui/map-picker";
+import { cn } from "@/lib/utils";
 
 // HostelDetailsProps interface should be defined here based on your data
 // For brevity, it is omitted here, but it should match the 'hostel' object structure
@@ -57,6 +64,8 @@ interface HostelDetailsProps {
     name: string;
     description: string;
     location: string;
+    latitude: number | null;
+    longitude: number | null;
     rating: number;
     totalReviews: number;
     ratingDistribution: { [key: string]: number };
@@ -73,6 +82,7 @@ interface HostelDetailsProps {
       type: string;
       available: number;
       price: number;
+      images: { url: string }[];
     }[];
     reviews: {
       id: string;
@@ -89,11 +99,19 @@ interface HostelDetailsProps {
 
 export function HostelDetails({ hostel }: HostelDetailsProps) {
   const router = useRouter();
-  const { data: session } = useSession(); 
+  const { data: session } = useSession();
   const [isSaved, setIsSaved] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
   const [showPhotoGallery, setShowPhotoGallery] = useState(false);
   const [currentPhotoIndex, setCurrentPhotoIndex] = useState(0);
+  const [selectedRoom, setSelectedRoom] = useState<string | null>(null);
+  const [showRoomPhotoGallery, setShowRoomPhotoGallery] = useState(false);
+  const [currentRoomImages, setCurrentRoomImages] = useState<{ url: string }[]>(
+    []
+  );
+  const [currentRoomPhotoIndex, setCurrentRoomPhotoIndex] = useState(0);
+
+  console.log(hostel.rooms, "hostel rooms");
 
   const handleSaveHostel = async () => {
     if (!session) {
@@ -109,7 +127,7 @@ export function HostelDetails({ hostel }: HostelDetailsProps) {
       if (isSaved) {
         await unsaveHostel(hostel.id, session?.user?.id);
         setIsSaved(false);
-          toast.success("Hostel removed from your saved list");
+        toast.success("Hostel removed from your saved list");
       } else {
         await saveHostel(hostel.id, session?.user?.id);
         setIsSaved(true);
@@ -123,11 +141,14 @@ export function HostelDetails({ hostel }: HostelDetailsProps) {
   };
 
   // Check if hostel is saved when component mounts
-  useState(() => {
+  useEffect(() => {
     const checkSavedStatus = async () => {
       if (!session) return;
 
-      const savedHostel = await saveHostel(hostel.id, session?.user?.id);
+      const savedHostel = await getSavedHostelStatus(
+        hostel.id,
+        session?.user?.id
+      );
 
       if (savedHostel) {
         setIsSaved(true);
@@ -135,7 +156,7 @@ export function HostelDetails({ hostel }: HostelDetailsProps) {
     };
 
     checkSavedStatus();
-  });
+  }, [session, hostel.id]);
 
   const openPhotoGallery = (initialIndex = 0) => {
     setCurrentPhotoIndex(initialIndex);
@@ -161,6 +182,35 @@ export function HostelDetails({ hostel }: HostelDetailsProps) {
     e.stopPropagation();
     setCurrentPhotoIndex((prev) =>
       prev === 0 ? hostel.images.length - 1 : prev - 1
+    );
+  };
+
+  const openRoomPhotoGallery = (
+    images: { url: string }[],
+    initialIndex = 0
+  ) => {
+    setCurrentRoomImages(images);
+    setCurrentRoomPhotoIndex(initialIndex);
+    setShowRoomPhotoGallery(true);
+    document.body.style.overflow = "hidden";
+  };
+
+  const closeRoomPhotoGallery = () => {
+    setShowRoomPhotoGallery(false);
+    document.body.style.overflow = "auto";
+  };
+
+  const nextRoomPhoto = (e: React.MouseEvent) => {
+    e.stopPropagation();
+    setCurrentRoomPhotoIndex((prev) =>
+      prev === currentRoomImages.length - 1 ? 0 : prev + 1
+    );
+  };
+
+  const prevRoomPhoto = (e: React.MouseEvent) => {
+    e.stopPropagation();
+    setCurrentRoomPhotoIndex((prev) =>
+      prev === 0 ? currentRoomImages.length - 1 : prev - 1
     );
   };
 
@@ -209,6 +259,60 @@ export function HostelDetails({ hostel }: HostelDetailsProps) {
               variant="ghost"
               size="icon"
               onClick={nextPhoto}
+              className="absolute right-4 md:right-8 text-white hover:bg-white/20 rounded-full"
+            >
+              <ChevronRight className="h-8 w-8" />
+            </Button>
+          </div>
+        </div>
+      )}
+
+      {/* Room Photo Gallery Modal */}
+      {showRoomPhotoGallery && (
+        <div
+          className="fixed inset-0 bg-black/90 z-50 flex items-center justify-center"
+          onClick={closeRoomPhotoGallery}
+        >
+          <div className="absolute top-4 right-4 z-10">
+            <Button
+              variant="ghost"
+              size="icon"
+              onClick={closeRoomPhotoGallery}
+              className="text-white hover:bg-white/20 rounded-full"
+            >
+              <X className="h-6 w-6" />
+            </Button>
+          </div>
+
+          <div className="flex items-center justify-center w-full h-full px-4 relative">
+            <Button
+              variant="ghost"
+              size="icon"
+              onClick={prevRoomPhoto}
+              className="absolute left-4 md:left-8 text-white hover:bg-white/20 rounded-full"
+            >
+              <ChevronLeft className="h-8 w-8" />
+            </Button>
+
+            <div className="relative h-[80vh] w-full max-w-4xl">
+              <Image
+                src={
+                  currentRoomImages[currentRoomPhotoIndex]?.url ||
+                  "/placeholder.svg"
+                }
+                alt={`Room Photo ${currentRoomPhotoIndex + 1}`}
+                fill
+                className="object-contain"
+              />
+              <div className="absolute bottom-4 left-0 right-0 text-center text-white text-sm">
+                {currentRoomPhotoIndex + 1} / {currentRoomImages.length}
+              </div>
+            </div>
+
+            <Button
+              variant="ghost"
+              size="icon"
+              onClick={nextRoomPhoto}
               className="absolute right-4 md:right-8 text-white hover:bg-white/20 rounded-full"
             >
               <ChevronRight className="h-8 w-8" />
@@ -408,13 +512,20 @@ export function HostelDetails({ hostel }: HostelDetailsProps) {
                           <p className="text-muted-foreground">
                             {hostel.distance_to_campus} km from campus
                           </p>
-                          <div className="mt-2 h-48 bg-muted rounded-md relative">
-                            <Image
-                              src="/placeholder.svg?height=300&width=600&text=Map"
-                              alt="Map location"
-                              fill
-                              className="object-cover rounded-md"
-                            />
+                          <div className="mt-2 h-60 bg-muted rounded-md relative">
+                            {hostel.latitude && hostel.longitude ? (
+                              <MapPicker
+                                mode="display"
+                                hostelLocation={{
+                                  latitude: hostel.latitude,
+                                  longitude: hostel.longitude,
+                                }}
+                              />
+                            ) : (
+                              <div className="flex items-center justify-center h-full text-muted-foreground">
+                                No map data available
+                              </div>
+                            )}
                           </div>
                         </div>
 
@@ -466,38 +577,95 @@ export function HostelDetails({ hostel }: HostelDetailsProps) {
                     <CardContent className="pt-6">
                       <div className="space-y-6">
                         {hostel?.rooms?.map((room) => (
-                          <div
-                            key={room.id}
-                            className="flex flex-col md:flex-row md:items-center justify-between p-4 border rounded-lg"
-                          >
-                            <div>
-                              <h3 className="font-semibold text-lg">
-                                {room.type}
-                              </h3>
-                              <p className="text-muted-foreground">
-                                {room.available}{" "}
-                                {room.available === 1 ? "room" : "rooms"}{" "}
-                                available
-                              </p>
-                            </div>
-                            <div className="mt-4 md:mt-0 flex flex-col md:items-end">
-                              <div className="font-bold text-xl">
-                                ₵{room.price.toLocaleString()}
+                          <div key={room.id}>
+                            <div
+                              className={cn(
+                                "flex flex-col md:flex-row md:items-center justify-between p-4 border rounded-lg cursor-pointer hover:bg-muted/50 transition-colors",
+                                selectedRoom === room.id &&
+                                  "bg-muted border-primary/50"
+                              )}
+                              onClick={() =>
+                                setSelectedRoom(
+                                  selectedRoom === room.id ? null : room.id
+                                )
+                              }
+                            >
+                              <div>
+                                <h3 className="font-semibold text-lg">
+                                  {room.type}
+                                </h3>
+                                <p className="text-muted-foreground">
+                                  {room.available}{" "}
+                                  {room.available === 1 ? "room" : "rooms"}{" "}
+                                  available
+                                </p>
                               </div>
-                              <div className="text-sm text-muted-foreground">
-                                per semester
+                              <div className="mt-4 md:mt-0 flex flex-col md:items-end">
+                                <div className="font-bold text-xl">
+                                  ₵{room.price.toLocaleString()}
+                                </div>
+                                <div className="text-sm text-muted-foreground">
+                                  per semester
+                                </div>
+                                <Button
+                                  className="mt-2"
+                                  onClick={(e) => {
+                                    e.stopPropagation();
+                                    document
+                                      .getElementById("booking-form")
+                                      ?.scrollIntoView({
+                                        behavior: "smooth",
+                                      });
+                                  }}
+                                >
+                                  Select
+                                </Button>
                               </div>
-                              <Button
-                                className="mt-2"
-                                onClick={() => {
-                                  document
-                                    .getElementById("booking-form")
-                                    ?.scrollIntoView({ behavior: "smooth" });
-                                }}
-                              >
-                                Select
-                              </Button>
                             </div>
+                            <AnimatePresence>
+                              {selectedRoom === room.id && (
+                                <motion.div
+                                  initial={{ opacity: 0, height: 0 }}
+                                  animate={{ opacity: 1, height: "auto" }}
+                                  exit={{ opacity: 0, height: 0 }}
+                                  transition={{
+                                    duration: 0.3,
+                                    ease: "easeInOut",
+                                  }}
+                                  className="pt-4 overflow-hidden"
+                                >
+                                  {room.images && room.images.length > 0 ? (
+                                    <div className="grid grid-cols-2 md:grid-cols-4 gap-2">
+                                      {room.images.map((image, index) => (
+                                        <div
+                                          key={index}
+                                          className="relative aspect-video rounded-md overflow-hidden group cursor-pointer"
+                                          onClick={() =>
+                                            openRoomPhotoGallery(
+                                              room.images,
+                                              index
+                                            )
+                                          }
+                                        >
+                                          <Image
+                                            src={image.url}
+                                            alt={`${room.type} - Image ${
+                                              index + 1
+                                            }`}
+                                            fill
+                                            className="object-cover transition-transform duration-300 group-hover:scale-105"
+                                          />
+                                        </div>
+                                      ))}
+                                    </div>
+                                  ) : (
+                                    <p className="text-muted-foreground text-sm text-center py-4">
+                                      No images available for this room type.
+                                    </p>
+                                  )}
+                                </motion.div>
+                              )}
+                            </AnimatePresence>
                           </div>
                         ))}
                       </div>

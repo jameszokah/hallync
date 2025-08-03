@@ -6,6 +6,7 @@ import {
   Hostels,
   Room,
 } from "../generated/prisma";
+import { Suspense } from "react";
 
 // type University = Tables<"universities">
 
@@ -47,18 +48,9 @@ export default async function HostelsPage({
     },
   });
 
-  // Initial hostel query
-  let hostelsQuery = await prisma.hostels.findMany({
-    include: {
-      rooms: true,
-      images: true,
-      reviews: true,
-    },
-  });
+  const filters: any = {};
+  const orderBy: any = {};
 
- 
-
-  // Apply filters
   if (university) {
     const universityQuery = await prisma.university.findFirst({
       where: {
@@ -66,115 +58,82 @@ export default async function HostelsPage({
       },
     });
 
-    hostelsQuery = await prisma.hostels.findMany({
-      where: {
-        university: universityQuery?.name,
-      },
-      include: {
-        rooms: true,
-        images: true,
-        reviews: true,
-      },
-    });
+    if (universityQuery) {
+      filters.university = universityQuery.name;
+    }
   }
 
   if (location) {
-    hostelsQuery = await prisma.hostels.findMany({
-      where: {
+    filters.OR = [
+      {
         name: {
           contains: location,
+          mode: "insensitive",
         },
+      },
+      {
         location: {
           contains: location,
+          mode: "insensitive",
         },
       },
-      include: {
-        rooms: true,
-        images: true,
-        reviews: true,
-      },
-    });
+    ];
   }
 
-  // Filter by room type
   if (roomType) {
-    hostelsQuery = await prisma.hostels.findMany({
-      where: {
-        rooms: {
-          some: {
-            type: roomType,
-          },
+    filters.rooms = {
+      some: {
+        type: {
+          equals: roomType,
+          mode: "insensitive",
         },
       },
-      include: {
-        rooms: true,
-        images: true,
-        reviews: true,
-      },
-    });
+    };
   }
 
-  // Filter by distance to campus
+  if (minPrice || maxPrice) {
+    filters.rooms = {
+      ...(filters.rooms || {}),
+      some: {
+        ...((filters.rooms?.some as object) || {}),
+        price: {
+          ...(minPrice !== undefined ? { gte: minPrice } : {}),
+          ...(maxPrice !== undefined ? { lte: maxPrice } : {}),
+        },
+      },
+    };
+  }
+
   if (distance) {
-    hostelsQuery = await prisma.hostels.findMany({
-      where: {
-        distance_to_campus: distance,
-      },
-      include: {
-        rooms: true,
-        images: true,
-        reviews: true,
-      },
-    });
+    filters.distance_to_campus = distance;
   }
 
   // Apply sorting
   switch (sort) {
     case "price-low":
-      hostelsQuery = await prisma.hostels.findMany({
-        orderBy: {
-          rooms: {
-            _count: "asc",
-          },
-        },
-        include: {
-          rooms: true,
-          images: true,
-          reviews: true,
-        },
-      });
+      orderBy.rooms = { _count: "asc" };
       break;
     case "price-high":
-      hostelsQuery = await prisma.hostels.findMany({
-        orderBy: {
-          rooms: {
-            _count: "desc",
-          },
-        },
-        include: {
-          rooms: true,
-          images: true,
-          reviews: true,
-        },
-      });
+      orderBy.rooms = { _count: "desc" };
       break;
     case "distance":
-      hostelsQuery = await prisma.hostels.findMany({
-        orderBy: {
-          distance_to_campus: "asc",
-        },
-        include: {
-          rooms: true,
-          images: true,
-          reviews: true,
-        },
-      });
+      orderBy.distance_to_campus = "asc";
       break;
     default:
-      // Default to recommended (could be a combination of factors)
-      // If default sort is by rating, this will be handled in JS
+      // Leave unsorted or handle client-side
       break;
   }
+
+  // Final query
+  const hostelsQuery = await prisma.hostels.findMany({
+    where: filters,
+    orderBy: Object.keys(orderBy).length > 0 ? orderBy : undefined,
+    include: {
+      rooms: true,
+      images: true,
+      reviews: true,
+    },
+  });
 
   // Paginate the results manually
   const totalHostelsCount = hostelsQuery.length;
@@ -221,22 +180,26 @@ export default async function HostelsPage({
   }
 
   return (
-    <HostelsList
-      hostels={processedHostels}
-      totalHostels={totalHostelsCount}
-      currentPage={page}
-      pageSize={pageSize}
-      universities={universities || []}
-      filters={{
-        university,
-        location,
-        minPrice,
-        maxPrice,
-        amenities,
-        roomType,
-        distance,
-        sort,
-      }}
-    />
+    <>
+      <Suspense>
+        <HostelsList
+          hostels={processedHostels}
+          totalHostels={totalHostelsCount}
+          currentPage={page}
+          pageSize={pageSize}
+          universities={universities || []}
+          filters={{
+            university,
+            location,
+            minPrice,
+            maxPrice,
+            amenities,
+            roomType,
+            distance,
+            sort,
+          }}
+        />
+      </Suspense>
+    </>
   );
 }

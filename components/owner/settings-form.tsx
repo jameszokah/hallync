@@ -15,15 +15,18 @@ import {
 } from "@/components/ui/form";
 import { Input } from "@/components/ui/input";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
-import { User } from "@prisma/client";
 import { toast } from "sonner";
 import { motion } from "motion/react";
 import { updateUserProfile } from "@/lib/actions/user";
 import { useTransition } from "react";
+import { User } from "@/app/generated/prisma";
 
 const formSchema = z.object({
-  name: z.string().min(2, {
-    message: "Name must be at least 2 characters.",
+  first_name: z.string().min(2, {
+    message: "First name must be at least 2 characters.",
+  }),
+  last_name: z.string().min(2, {
+    message: "Last name must be at least 2 characters.",
   }),
   email: z.string().email(),
   phone: z.string().optional(),
@@ -35,7 +38,8 @@ export function OwnerSettingsForm({ user }: { user: User }) {
   const form = useForm<z.infer<typeof formSchema>>({
     resolver: zodResolver(formSchema),
     defaultValues: {
-      name: user.name ?? "",
+      first_name: user.first_name ?? "",
+      last_name: user.last_name ?? "",
       email: user.email,
       phone: user.phone ?? "",
     },
@@ -43,7 +47,11 @@ export function OwnerSettingsForm({ user }: { user: User }) {
 
   async function onSubmit(values: z.infer<typeof formSchema>) {
     startTransition(() => {
-      updateUserProfile(values).then((data) => {
+      updateUserProfile({
+        first_name: values.first_name,
+        last_name: values.last_name,
+        phone: values.phone,
+      }).then((data) => {
         if (data.error) {
           toast.error(data.error);
         }
@@ -72,12 +80,25 @@ export function OwnerSettingsForm({ user }: { user: User }) {
             <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-8">
               <FormField
                 control={form.control}
-                name="name"
+                name="first_name"
                 render={({ field }) => (
                   <FormItem>
-                    <FormLabel>Full Name</FormLabel>
+                    <FormLabel>First Name</FormLabel>
                     <FormControl>
-                      <Input placeholder="Your full name" {...field} />
+                      <Input placeholder="Your first name" {...field} />
+                    </FormControl>
+                    <FormMessage />
+                  </FormItem>
+                )}
+              />
+              <FormField
+                control={form.control}
+                name="last_name"
+                render={({ field }) => (
+                  <FormItem>
+                    <FormLabel>Last Name</FormLabel>
+                    <FormControl>
+                      <Input placeholder="Your last name" {...field} />
                     </FormControl>
                     <FormMessage />
                   </FormItem>

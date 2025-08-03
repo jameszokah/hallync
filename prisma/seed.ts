@@ -53,23 +53,43 @@ const hostels = [
     },
 ];
 
-const seed = async () => {
-    const user = await prisma.user.create({
-        data: {
-            email: "jamal3@gmail.com",
-            password: "pass9999",
-            first_name: "Jamal",
-            last_name: "Zok",
-            role: "ADMIN",
-            is_verified: true,
-            is_active: true,
-            emailVerified: new Date(),
-        },
-    });
+const universities = [
+    {
+        name: "University of Cape Coast",
+        location: "Cape Coast, Ghana",
+    },
+    {
+        name: "University of Ghana",
+        location: "Accra, Ghana",
+    },
+    {
+        name: "Kwame Nkrumah University of Science and Technology",
+        location: "Kumasi, Ghana",
+    },
+    {
+        name: "University of Education, Winneba",
+        location: "Winneba, Ghana",
+    },
+    
+];
 
-    const hostel = await prisma.hostels.createMany({
-        data: hostels,
-    });
+const seed = async () => {
+    // const user = await prisma.user.create({
+    //     data: {
+    //         email: "jamal3@gmail.com",
+    //         password: "pass9999",
+    //         first_name: "Jamal",
+    //         last_name: "Zok",
+    //         role: "ADMIN",
+    //         is_verified: true,
+    //         is_active: true,
+    //         emailVerified: new Date(),
+    //     },
+    // });
+
+    // const hostel = await prisma.hostels.createMany({
+    //     data: hostels,
+    // });
 
     // const hostel = await prisma.hostels.create({
     //     data: {
@@ -83,54 +103,53 @@ const seed = async () => {
     //     }
     // })
 
-    const room = await prisma.room.create({
-        data: {
-            type: "Single",
-            price: 100000,
-            capacity: 1,
-            available: true,
-            hostel_id: "1",
-            images: {
-                create: {
-                    url: "https://unsplash.com/photos/a-group-of-people-sitting-on-the-side-of-a-building-jDXMQf3LPX8",
-                    is_primary: true,
-                },
-            },
-        },
+    // const room = await prisma.room.create({
+    //     data: {
+    //         type: "Single",
+    //         price: 100000,
+    //         capacity: 1,
+    //         available: true,
+    //         hostel_id: "1",
+    //         images: {
+    //             create: {
+    //                 url: "https://unsplash.com/photos/a-group-of-people-sitting-on-the-side-of-a-building-jDXMQf3LPX8",
+    //                 is_primary: true,
+    //             },
+    //         },
+    //     },
+    // });
+
+    // const roomImage = await prisma.roomImages.createMany({
+    //     data: [
+    //         {
+    //             room_id: room.id,
+    //             url: "https://unsplash.com/photos/a-group-of-people-sitting-on-the-side-of-a-building-jDXMQf3LPX8",
+    //             is_primary: true,
+    //         },
+    //     ],
+    // });
+
+    // const booking = await prisma.booking.create({
+    //     data: {
+    //         user_id: user.id,
+    //         room_id: room.id,
+    //         hostel_id: "1",
+    //         check_in_date: new Date(),
+    //         check_out_date: new Date(),
+    //         status: "PENDING",
+    //         payment_status: "PENDING",
+    //         payment_method: "MOBILE_MONEY",
+    //         amount: 100000,
+    //     },
+    // });
+
+    const university = await prisma.university.createMany({
+        data: universities,
     });
 
-    const roomImage = await prisma.roomImages.createMany({
-        data: [
-            {
-                room_id: room.id,
-                url: "https://unsplash.com/photos/a-group-of-people-sitting-on-the-side-of-a-building-jDXMQf3LPX8",
-                is_primary: true,
-            },
-        ],
-    });
+    
 
-    const booking = await prisma.booking.create({
-        data: {
-            user_id: user.id,
-            room_id: room.id,
-            hostel_id: "1",
-            check_in_date: new Date(),
-            check_out_date: new Date(),
-            status: "PENDING",
-            payment_status: "PENDING",
-            payment_method: "MOBILE_MONEY",
-            amount: 100000,
-        },
-    });
-
-    const university = await prisma.university.create({
-        data: {
-            name: "Unversity of Cape Coast",
-            location: "Cape Coast, Ghana",
-        },
-    });
-
-    console.log(user, hostel, room, booking, university, roomImage);
+    console.log(university);
 };
 
 seed()
